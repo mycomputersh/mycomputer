@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
+import { organization } from "better-auth/plugins"
 import { v7 as uuidv7 } from "uuid"
 import * as schema from "@/db/auth-schema"
 import { db } from "@/db/drizzle"
@@ -21,4 +22,5 @@ export const auth = betterAuth({
       },
     },
   },
+  plugins: [organization()],
 })
