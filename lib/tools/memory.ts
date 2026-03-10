@@ -1,0 +1,108 @@
+import { embed } from "ai"
+import { google } from "@ai-sdk/google"
+import { tool, type UIToolInvocation } from "ai"
+import { z } from "zod"
+import { and, eq, sql } from "drizzle-orm"
+import { nanoid } from "nanoid"
+import { db } from "@/db/drizzle"
+import { agentMemories } from "@/db/memory-schema"
+
+const embeddingModel = google.embedding("gemini-embedding-001")
+
+async function getEmbedding(text: string): Promise<number[]> {
+  const { embedding } = await embed({
+    model: embeddingModel,
+    value: text,
+    providerOptions: { google: { taskType: "SEMANTIC_SIMILARITY" } },
+  })
+  return embedding
+}
+
+// ─── Tool factory ────────────────────────────────────────────────────────────
+
+export function createMemoryTools(organizationId: string) {
+  const memoryStoreTool = tool({
+    description:
+      "Store information in persistent semantic memory. Use for facts, preferences, or context to recall later.",
+    inputSchema: z.object({
+      key: z.string().describe("A short unique label for this memory"),
+      content: z.string().describe("The content to remember"),
+    }),
+    execute: async ({ key, content }) => {
+      const embedding = await getEmbedding(content)
+      // Upsert: delete existing memory with same key first
+      await db
+        .delete(agentMemories)
+        .where(
+          and(
+            eq(agentMemories.organizationId, organizationId),
+            eq(agentMemories.key, key),
+          ),
+        )
+      await db.insert(agentMemories).values({
+        id: nanoid(),
+        organizationId,
+        key,
+        content,
+        embedding,
+      })
+      return { stored: true, key }
+    },
+  })
+
+  const memoryRecallTool = tool({
+    description:
+      "Search memory semantically to recall relevant stored information.",
+    inputSchema: z.object({
+      query: z.string().describe("What to search for in memory"),
+      limit: z.number().optional().describe("Max results to return (default 5)"),
+    }),
+    execute: async ({ query, limit }) => {
+      const queryEmbedding = await getEmbedding(query)
+      const embeddingStr = `[${queryEmbedding.join(",")}]`
+
+      const results = await db
+        .select({
+          key: agentMemories.key,
+          content: agentMemories.content,
+          createdAt: agentMemories.createdAt,
+          similarity: sql<number>`1 - (${agentMemories.embedding} <=> ${embeddingStr}::vector)`,
+        })
+        .from(agentMemories)
+        .where(eq(agentMemories.organizationId, organizationId))
+        .orderBy(sql`${agentMemories.embedding} <=> ${embeddingStr}::vector`)
+        .limit(limit ?? 5)
+
+      return { results, count: results.length }
+    },
+  })
+
+  const memoryForgetTool = tool({
+    description: "Delete a stored memory by its key.",
+    inputSchema: z.object({
+      key: z.string().describe("The key of the memory to delete"),
+    }),
+    execute: async ({ key }) => {
+      await db
+        .delete(agentMemories)
+        .where(
+          and(
+            eq(agentMemories.organizationId, organizationId),
+            eq(agentMemories.key, key),
+          ),
+        )
+      return { deleted: true, key }
+    },
+  })
+
+  return { memoryStoreTool, memoryRecallTool, memoryForgetTool }
+}
+
+// ─── Type exports ─────────────────────────────────────────────────────────────
+// Dummy instance used only for type inference — no DB calls at module load time
+
+const _ref = createMemoryTools("__type_ref__")
+
+export type MemoryStoreInvocation = UIToolInvocation<typeof _ref.memoryStoreTool>
+export type MemoryRecallInvocation = UIToolInvocation<typeof _ref.memoryRecallTool>
+export type MemoryForgetInvocation = UIToolInvocation<typeof _ref.memoryForgetTool>
