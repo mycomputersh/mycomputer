@@ -51,6 +51,12 @@ export default async function DashboardLayout({
           >
             Chat
           </Link>
+          <Link
+            href="/dashboard/marketplace"
+            className="px-3 py-1.5 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+          >
+            Marketplace
+          </Link>
         </nav>
         <div className="ml-auto">
           <UserNav

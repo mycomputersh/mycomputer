@@ -1,4 +1,4 @@
-import { type InferAgentUIMessage, stepCountIs, ToolLoopAgent } from "ai"
+import { type InferAgentUIMessage, stepCountIs, ToolLoopAgent, type ToolSet } from "ai"
 import { codeRunnerTool } from "@/lib/tools/code-runner"
 import {
   listFilesTool,
@@ -11,15 +11,7 @@ import { webSearchTool } from "@/lib/tools/web-search"
 import { createPlanTool, updateStepStatusTool } from "@/lib/tools/workflow"
 import { geminiModel } from "../models"
 
-const instructions = `You are a capable AI assistant with access to a powerful set of tools.
-
-You can:
-- **Search the web** to find up-to-date information
-- **Run code** in Python, JavaScript, TypeScript, or Bash
-- **Manage memory** — store and recall information persistently using semantic search
-- **Plan workflows** — create structured step-by-step plans before tackling complex tasks
-- **Spawn subagents** — delegate heavy subtasks (research, coding, analysis) to specialized agents
-- **Manage files** — read, write, and list files in the workspace
+const instructions = `You are a capable AI assistant with access to a set of tools chosen by the user.
 
 ## Guidelines
 - For complex multi-step tasks, start with \`createPlan\` to outline your approach, then use \`updateStepStatus\` as you progress
@@ -27,32 +19,60 @@ You can:
 - Use \`memoryForget\` to delete outdated or incorrect memories
 - When a task requires deep research or focused coding, delegate to a subagent via \`spawnSubagent\`
 - Combine tools creatively — e.g., search → analyze → write code → run code
+- Only use tools that are available to you
 - Be transparent about what you're doing at each step`
 
-export function createMainAgent(organizationId: string) {
+// All available tool names
+export const ALL_TOOL_NAMES = [
+  "webSearch",
+  "runCode",
+  "memoryStore",
+  "memoryRecall",
+  "memoryForget",
+  "createPlan",
+  "updateStepStatus",
+  "spawnSubagent",
+  "writeFile",
+  "readFile",
+  "listFiles",
+] as const
+
+export type ToolName = (typeof ALL_TOOL_NAMES)[number]
+
+export function createMainAgent(
+  organizationId: string,
+  enabledToolNames: string[] = [...ALL_TOOL_NAMES],
+) {
   const { memoryStoreTool, memoryRecallTool, memoryForgetTool } =
     createMemoryTools(organizationId)
+
+  const allTools: ToolSet = {
+    webSearch: webSearchTool,
+    runCode: codeRunnerTool,
+    memoryStore: memoryStoreTool,
+    memoryRecall: memoryRecallTool,
+    memoryForget: memoryForgetTool,
+    createPlan: createPlanTool,
+    updateStepStatus: updateStepStatusTool,
+    spawnSubagent: spawnSubagentTool,
+    writeFile: writeFileTool,
+    readFile: readFileTool,
+    listFiles: listFilesTool,
+  }
+
+  const enabled = new Set(enabledToolNames)
+  const tools = Object.fromEntries(
+    Object.entries(allTools).filter(([key]) => enabled.has(key)),
+  )
 
   return new ToolLoopAgent({
     model: geminiModel,
     stopWhen: stepCountIs(30),
     instructions,
-    tools: {
-      webSearch: webSearchTool,
-      runCode: codeRunnerTool,
-      memoryStore: memoryStoreTool,
-      memoryRecall: memoryRecallTool,
-      memoryForget: memoryForgetTool,
-      createPlan: createPlanTool,
-      updateStepStatus: updateStepStatusTool,
-      spawnSubagent: spawnSubagentTool,
-      writeFile: writeFileTool,
-      readFile: readFileTool,
-      listFiles: listFilesTool,
-    },
+    tools,
   })
 }
 
-// Reference instance for type inference only
-const _ref = createMainAgent("__type_ref__")
+// Type-inference reference — always includes all tools so AgentUIMessage covers every tool part type
+const _ref = createMainAgent("__type_ref__", [...ALL_TOOL_NAMES])
 export type AgentUIMessage = InferAgentUIMessage<typeof _ref>
