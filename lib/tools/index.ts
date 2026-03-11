@@ -1,4 +1,5 @@
 export * from "./code-runner"
+export * from "./fetch-page"
 export * from "./file-ops"
 export * from "./memory"
 export * from "./subagent"

@@ -389,28 +389,27 @@ export const CodeBlockContent = ({
   // Memoized raw tokens for immediate display
   const rawTokens = useMemo(() => createRawTokens(code), [code])
 
-  // Try to get cached result synchronously, otherwise use raw tokens
-  const [tokenized, setTokenized] = useState<TokenizedCode>(
-    () => highlightCode(code, language) ?? rawTokens,
-  )
+  // Always start with rawTokens so SSR and client initial render match,
+  // then apply syntax highlighting after hydration via useEffect.
+  const [tokenized, setTokenized] = useState<TokenizedCode>(rawTokens)
 
   useEffect(() => {
     let cancelled = false
 
-    // Reset to raw tokens when code changes (shows current code, not stale tokens)
-    setTokenized(highlightCode(code, language) ?? rawTokens)
+    const cached = highlightCode(code, language)
+    if (cached) {
+      setTokenized(cached)
+      return
+    }
 
-    // Subscribe to async highlighting result
     highlightCode(code, language, (result) => {
-      if (!cancelled) {
-        setTokenized(result)
-      }
+      if (!cancelled) setTokenized(result)
     })
 
     return () => {
       cancelled = true
     }
-  }, [code, language, rawTokens])
+  }, [code, language])
 
   return (
     <div className="relative overflow-auto">

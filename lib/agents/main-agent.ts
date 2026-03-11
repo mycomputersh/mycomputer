@@ -1,5 +1,6 @@
 import { type InferAgentUIMessage, stepCountIs, ToolLoopAgent, type ToolSet } from "ai"
 import { codeRunnerTool } from "@/lib/tools/code-runner"
+import { fetchPageTool } from "@/lib/tools/fetch-page"
 import {
   listFilesTool,
   readFileTool,
@@ -26,6 +27,7 @@ const instructions = `You are a capable AI assistant with access to a set of too
 // All available tool names
 export const ALL_TOOL_NAMES = [
   "webSearch",
+  "fetchPage",
   "runCode",
   "memoryStore",
   "memoryRecall",
@@ -51,6 +53,7 @@ export function createMainAgent(
 
   const allTools: ToolSet = {
     webSearch: webSearchTool,
+    fetchPage: fetchPageTool,
     runCode: codeRunnerTool,
     memoryStore: memoryStoreTool,
     memoryRecall: memoryRecallTool,

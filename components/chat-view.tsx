@@ -27,6 +27,7 @@ import {
 import {
   CodeRunnerRenderer,
   CreatePlanRenderer,
+  FetchPageRenderer,
   ListFilesRenderer,
   MemoryForgetRenderer,
   MemoryRecallRenderer,
@@ -157,6 +158,7 @@ export function ChatView({ chatId: initialChatId, initialMessages = [] }: ChatVi
                   }
 
                   if (part.type === "tool-webSearch") return <WebSearchRenderer key={key} part={part} />
+                  if (part.type === "tool-fetchPage") return <FetchPageRenderer key={key} part={part} />
                   if (part.type === "tool-runCode") return <CodeRunnerRenderer key={key} part={part} />
                   if (part.type === "tool-memoryStore") return <MemoryStoreRenderer key={key} part={part} />
                   if (part.type === "tool-memoryRecall") return <MemoryRecallRenderer key={key} part={part} />

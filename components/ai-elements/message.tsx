@@ -325,7 +325,14 @@ export const MessageResponse = memo(
   ({ className, ...props }: MessageResponseProps) => (
     <Streamdown
       className={cn(
-        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        // prose base
+        "prose prose-sm dark:prose-invert max-w-none",
+        // spacing resets
+        "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        // inline code: keep streamdown/code block styles, just reset prose's pre padding
+        "prose-pre:p-0 prose-pre:bg-transparent prose-pre:rounded-none",
+        // links
+        "prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
         className,
       )}
       plugins={streamdownPlugins}

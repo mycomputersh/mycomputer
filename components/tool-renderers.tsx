@@ -3,6 +3,7 @@
 import type {
   CodeRunnerInvocation,
   CreatePlanInvocation,
+  FetchPageInvocation,
   ListFilesInvocation,
   MemoryForgetInvocation,
   MemoryRecallInvocation,
@@ -60,6 +61,39 @@ export function WebSearchRenderer({ part }: { part: WebSearchInvocation }) {
                     </div>
                   ),
                 )}
+              </div>
+            ) : null
+          }
+          errorText={part.state === "output-error" ? part.errorText : undefined}
+        />
+      </ToolContent>
+    </Tool>
+  )
+}
+
+// ─── Fetch Page ──────────────────────────────────────────────────────────────
+
+export function FetchPageRenderer({ part }: { part: FetchPageInvocation }) {
+  const output = part.state === "output-available" ? part.output : null
+  return (
+    <Tool defaultOpen={false}>
+      <ToolHeader type="tool-fetchPage" state={part.state} title="Fetch Page" />
+      <ToolContent>
+        <ToolInput input={part.input} />
+        <ToolOutput
+          output={
+            output ? (
+              <div className="space-y-2 p-3 text-sm">
+                <p className="font-medium truncate">{output.title}</p>
+                <p className="text-xs text-muted-foreground truncate">{output.url}</p>
+                <p className="text-xs text-muted-foreground">
+                  {output.charCount.toLocaleString()} chars
+                  {output.truncated && " (truncated)"}
+                </p>
+                <pre className="text-xs whitespace-pre-wrap max-h-48 overflow-y-auto rounded bg-muted/50 p-2">
+                  {output.content.slice(0, 500)}
+                  {output.content.length > 500 && "…"}
+                </pre>
               </div>
             ) : null
           }
