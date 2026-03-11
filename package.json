@@ -13,9 +13,12 @@
     "auth:generate": "npx auth@latest generate --output ./db/auth-schema.ts"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.58",
     "@ai-sdk/devtools": "^0.0.15",
     "@ai-sdk/google": "^3.0.43",
+    "@ai-sdk/groq": "^3.0.29",
     "@ai-sdk/mcp": "1.0.27",
+    "@ai-sdk/mistral": "^3.0.24",
     "@ai-sdk/openai": "3.0.41",
     "@ai-sdk/react": "^3.0.118",
     "@better-auth/drizzle-adapter": "^1.5.4",

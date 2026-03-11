@@ -1,7 +1,6 @@
 "use client"
 
 import { useRef, useState } from "react"
-import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { ChevronRight, FolderIcon, FolderOpen, MessageSquare, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -26,6 +25,12 @@ function ChatItem({ chat }: { chat: ChatMeta }) {
   const pathname = usePathname()
   const router = useRouter()
   const isActive = pathname === `/dashboard/chat/${chat.id}`
+
+  const handleNavigate = () => {
+    if (!isActive) {
+      router.push(`/dashboard/chat/${chat.id}`)
+    }
+  }
   const { folders, renameChat, removeChat, moveChatToFolder } = useChatSidebar()
 
   const [isRenaming, setIsRenaming] = useState(false)
@@ -87,12 +92,12 @@ function ChatItem({ chat }: { chat: ChatMeta }) {
           autoFocus
         />
       ) : (
-        <Link
-          href={`/dashboard/chat/${chat.id}`}
-          className="flex-1 truncate text-xs"
+        <button
+          onClick={handleNavigate}
+          className="flex-1 truncate text-left text-xs"
         >
           {chat.title}
-        </Link>
+        </button>
       )}
 
       {!isRenaming && (
@@ -306,7 +311,12 @@ function NewFolderInput({ onDone }: { onDone: () => void }) {
 
 export function ChatSidebar() {
   const { chats, folders } = useChatSidebar()
+  const router = useRouter()
   const [addingFolder, setAddingFolder] = useState(false)
+
+  const handleNewChat = () => {
+    router.push("/dashboard/chat")
+  }
 
   const folderChats = (folderId: string) =>
     chats.filter((c) => c.folderId === folderId)
@@ -333,12 +343,10 @@ export function ChatSidebar() {
             variant="ghost"
             size="icon"
             className="size-6"
-            asChild
+            onClick={handleNewChat}
             title="New chat"
           >
-            <Link href="/dashboard/chat">
-              <Plus className="size-3.5" />
-            </Link>
+            <Plus className="size-3.5" />
           </Button>
         </div>
       </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, useRef, useState } from "react"
+import { Fragment, useEffect, useRef, useState } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport, type UIMessage } from "ai"
 import { CopyIcon, RefreshCcwIcon, AlertCircleIcon } from "lucide-react"
@@ -8,6 +8,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { Analytics01Icon } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
 import { TelemetryPanel } from "@/components/telemetry-panel"
+import { ModelSelector, type AvailableModel } from "@/components/model-selector"
 import {
   Conversation,
   ConversationContent,
@@ -52,6 +53,7 @@ interface ChatViewProps {
   chatId: string | null
   initialMessages?: UIMessage[]
   initialError?: string | null
+  availableModels?: AvailableModel[]
 }
 
 const SUGGESTIONS = [
@@ -62,15 +64,20 @@ const SUGGESTIONS = [
   "Remember my name and recall it later",
 ]
 
-export function ChatView({ chatId: initialChatId, initialMessages = [], initialError = null }: ChatViewProps) {
+export function ChatView({ chatId: initialChatId, initialMessages = [], initialError = null, availableModels = [] }: ChatViewProps) {
   const { addChat } = useChatSidebar()
   const [input, setInput] = useState("")
   const [telemetryOpen, setTelemetryOpen] = useState(false)
+  const [selectedModel, setSelectedModel] = useState<string>(
+    availableModels[0]?.id ?? "google:gemini-2.5-flash"
+  )
   // Persistent error: seeded from DB, updated on error/success
   const [persistedError, setPersistedError] = useState<string | null>(initialError)
 
   const chatIdRef = useRef<string | null>(initialChatId)
   const messagesRef = useRef<UIMessage[]>(initialMessages)
+  // Holds metadata for a newly created chat that hasn't been committed to the URL yet
+  const pendingNewChatRef = useRef<{ id: string; title: string } | null>(null)
 
   const patchChat = (id: string, updates: Record<string, unknown>) => {
     fetch(`/api/chats/${id}`, {
@@ -88,13 +95,13 @@ export function ChatView({ chatId: initialChatId, initialMessages = [], initialE
     transport: new DefaultChatTransport({
       api: "/api/chat",
       prepareSendMessagesRequest: ({ messages, trigger, messageId }) => ({
-        body: { messages, trigger, messageId, chatId: chatIdRef.current },
+        body: { messages, trigger, messageId, chatId: chatIdRef.current, model: selectedModel },
       }),
     }),
     messages: initialMessages as AgentUIMessage[],
     onFinish: () => {
       if (chatIdRef.current) {
-        // Clear any stored error on success and save messages
+        // Save final messages (includes AI response) and clear error
         patchChat(chatIdRef.current, { messages: messagesRef.current, lastError: null })
         setPersistedError(null)
       }
@@ -121,6 +128,20 @@ export function ChatView({ chatId: initialChatId, initialMessages = [], initialE
 
   messagesRef.current = messages
 
+  // Save user message immediately when submitted, and commit URL for new chats
+  useEffect(() => {
+    if (status === "submitted" && chatIdRef.current) {
+      patchChat(chatIdRef.current, { messages: messagesRef.current, lastError: null })
+      if (pendingNewChatRef.current) {
+        const { id, title } = pendingNewChatRef.current
+        pendingNewChatRef.current = null
+        window.history.replaceState(null, "", `/dashboard/chat/${id}`)
+        addChat({ id, title, folderId: null, updatedAt: new Date() })
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status])
+
   const handleRetry = () => {
     setPersistedError(null)
     if (chatIdRef.current) saveError(chatIdRef.current, null)
@@ -134,15 +155,15 @@ export function ChatView({ chatId: initialChatId, initialMessages = [], initialE
     setPersistedError(null)
 
     if (!chatIdRef.current) {
+      const title = msg.text.slice(0, 60)
       const res = await fetch("/api/chats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: msg.text.slice(0, 60) }),
+        body: JSON.stringify({ title }),
       })
       const { id } = await res.json()
       chatIdRef.current = id
-      addChat({ id, title: msg.text.slice(0, 60), folderId: null, updatedAt: new Date() })
-      window.history.replaceState(null, "", `/dashboard/chat/${id}`)
+      pendingNewChatRef.current = { id, title }
     } else {
       saveError(chatIdRef.current, null)
     }
@@ -241,6 +262,15 @@ export function ChatView({ chatId: initialChatId, initialMessages = [], initialE
               </Fragment>
             )
           })}
+          {status === "submitted" && (
+            <div className="flex items-center gap-2 px-1 py-2">
+              <div className="flex gap-1">
+                <span className="size-1.5 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:0ms]" />
+                <span className="size-1.5 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:150ms]" />
+                <span className="size-1.5 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:300ms]" />
+              </div>
+            </div>
+          )}
           {persistedError && (
             <div className="max-w-3xl mx-auto w-full">
               <div className="flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -277,6 +307,12 @@ export function ChatView({ chatId: initialChatId, initialMessages = [], initialE
             />
           </PromptInputBody>
           <PromptInputFooter className="justify-between">
+            <div className="flex items-center gap-2">
+              <ModelSelector
+                models={availableModels}
+                value={selectedModel}
+                onChange={setSelectedModel}
+              />
             <button
               type="button"
               onClick={() => setTelemetryOpen((o) => !o)}
@@ -287,6 +323,7 @@ export function ChatView({ chatId: initialChatId, initialMessages = [], initialE
               <HugeiconsIcon icon={Analytics01Icon} className="size-3.5" />
               Traces
             </button>
+            </div>
             <PromptInputSubmit
               status={status === "streaming" ? "streaming" : "ready"}
               disabled={!input.trim() && status !== "streaming"}

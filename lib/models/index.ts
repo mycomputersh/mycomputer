@@ -1,14 +1,14 @@
 import { devToolsMiddleware } from "@ai-sdk/devtools"
+import { createAnthropic } from "@ai-sdk/anthropic"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
+import { createMistral } from "@ai-sdk/mistral"
+import { createGroq } from "@ai-sdk/groq"
 import { createOpenAI } from "@ai-sdk/openai"
 import { wrapLanguageModel, type LanguageModelMiddleware } from "ai"
-import type { OrgSettings } from "@/db/settings-schema"
+import type { ProviderConfigs } from "@/db/settings-schema"
 import { createTelemetryMiddleware, type TelemetryContext } from "@/lib/middleware/telemetry"
 
-export type { OrgSettings }
-
 // ─── Rate-limit backoff middleware ────────────────────────────────────────────
-// Retries up to MAX_RETRIES times with exponential backoff when a 429 is hit.
 
 const MAX_RETRIES = 5
 const BASE_DELAY_MS = 2_000
@@ -49,52 +49,90 @@ const rateLimitBackoffMiddleware: LanguageModelMiddleware = {
   wrapStream: (options) => withBackoff(() => options.doStream(), "stream"),
 }
 
-// ─── Model factories ──────────────────────────────────────────────────────────
+// ─── Model factory ────────────────────────────────────────────────────────────
+// modelString format: "provider:modelId"  e.g. "google:gemini-2.5-flash"
 
-export function createLanguageModel(settings: OrgSettings | null, telemetry?: TelemetryContext) {
+export function createLanguageModel(
+  providerConfigs: ProviderConfigs | null,
+  modelString: string,
+  telemetry?: TelemetryContext,
+) {
+  const sepIdx = modelString.indexOf(":")
+  const providerId = sepIdx === -1 ? "google" : modelString.slice(0, sepIdx)
+  const modelId = sepIdx === -1 ? modelString : modelString.slice(sepIdx + 1)
+
+  const config = providerConfigs?.[providerId] ?? {}
+
   const middleware: LanguageModelMiddleware[] = []
   if (telemetry) middleware.push(createTelemetryMiddleware(telemetry))
   middleware.push(rateLimitBackoffMiddleware, devToolsMiddleware())
 
-  if (settings?.aiProvider === "openai") {
-    const client = createOpenAI({
-      apiKey: settings.aiApiKey ?? process.env.OPENAI_API_KEY,
-      baseURL: settings.aiBaseUrl ?? undefined,
-    })
-    return wrapLanguageModel({
-      model: client(settings.aiModel ?? "gpt-4o"),
-      middleware,
-    })
-  }
+  const wrap = (model: Parameters<typeof wrapLanguageModel>[0]["model"]) =>
+    wrapLanguageModel({ model, middleware })
 
-  // Google (default)
-  const client = createGoogleGenerativeAI({
-    apiKey: settings?.aiApiKey ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-  })
-  return wrapLanguageModel({
-    model: client(settings?.aiModel ?? "gemini-2.5-flash"),
-    middleware,
-  })
+  switch (providerId) {
+    case "openai": {
+      const client = createOpenAI({
+        apiKey: config.apiKey ?? process.env.OPENAI_API_KEY,
+        baseURL: config.baseUrl ?? undefined,
+      })
+      return wrap(client(modelId || "gpt-4o"))
+    }
+    case "anthropic": {
+      const client = createAnthropic({
+        apiKey: config.apiKey ?? process.env.ANTHROPIC_API_KEY,
+      })
+      return wrap(client(modelId || "claude-sonnet-4-6"))
+    }
+    case "groq": {
+      const client = createGroq({
+        apiKey: config.apiKey ?? process.env.GROQ_API_KEY,
+        baseURL: config.baseUrl ?? undefined,
+      })
+      return wrap(client(modelId || "llama-3.3-70b-versatile"))
+    }
+    case "mistral": {
+      const client = createMistral({
+        apiKey: config.apiKey ?? process.env.MISTRAL_API_KEY,
+      })
+      return wrap(client(modelId || "mistral-large-latest"))
+    }
+    case "ollama": {
+      // Ollama is OpenAI-compatible
+      const client = createOpenAI({
+        apiKey: config.apiKey ?? "ollama",
+        baseURL: config.baseUrl ?? "http://localhost:11434/v1",
+      })
+      return wrap(client(modelId || "llama3.2"))
+    }
+    default: {
+      // Google (default)
+      const client = createGoogleGenerativeAI({
+        apiKey: config.apiKey ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+      })
+      return wrap(client(modelId || "gemini-2.5-flash"))
+    }
+  }
 }
 
-export function createEmbeddingModel(settings: OrgSettings | null) {
-  const provider = settings?.embeddingProvider ?? settings?.aiProvider ?? "google"
-  const apiKey = settings?.embeddingApiKey ?? settings?.aiApiKey
+export function createEmbeddingModel(providerConfigs: ProviderConfigs | null) {
+  // Use google for embeddings by default, fall back to openai if google not configured
+  const googleConfig = providerConfigs?.["google"]
+  const openaiConfig = providerConfigs?.["openai"]
 
-  if (provider === "openai") {
-    const client = createOpenAI({
-      apiKey: apiKey ?? process.env.OPENAI_API_KEY,
-      baseURL: settings?.embeddingBaseUrl ?? settings?.aiBaseUrl ?? undefined,
+  if (googleConfig?.apiKey || process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    const client = createGoogleGenerativeAI({
+      apiKey: googleConfig?.apiKey ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     })
-    return client.embedding(settings?.embeddingModel ?? "text-embedding-3-small")
+    return client.embedding("gemini-embedding-001")
   }
 
-  // Google (default)
-  const client = createGoogleGenerativeAI({
-    apiKey: apiKey ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+  const client = createOpenAI({
+    apiKey: openaiConfig?.apiKey ?? process.env.OPENAI_API_KEY,
+    baseURL: openaiConfig?.baseUrl ?? undefined,
   })
-  return client.embedding(settings?.embeddingModel ?? "gemini-embedding-001")
+  return client.embedding("text-embedding-3-small")
 }
 
 // Default model for static contexts (type inference, subagents without settings)
-export const geminiModel = createLanguageModel(null)
+export const geminiModel = createLanguageModel(null, "google:gemini-2.5-flash")

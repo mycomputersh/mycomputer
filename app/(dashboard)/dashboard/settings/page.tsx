@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { db } from "@/db/drizzle"
 import { orgSettings } from "@/db/settings-schema"
+import type { ProviderConfigs } from "@/db/settings-schema"
 import { SettingsTabs } from "@/components/settings-tabs"
 
 export default async function SettingsPage() {
@@ -27,18 +28,23 @@ export default async function SettingsPage() {
 
   if (!org) redirect("/dashboard")
 
+  const row = settingsRows[0] ?? null
+  const providerConfigs: ProviderConfigs = row?.providerConfigs
+    ? JSON.parse(row.providerConfigs)
+    : {}
+
   const currentMember = org.members.find((m) => m.userId === session.user.id)
   const canManage =
     currentMember?.role === "owner" || currentMember?.role === "admin"
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex h-14 shrink-0 items-center border-b px-6">
-        <h1 className="text-sm font-semibold">Settings</h1>
+      <header className="flex h-11 shrink-0 items-center border-b px-4">
+        <h1 className="text-xs font-semibold">Settings</h1>
       </header>
 
       <SettingsTabs
-        initialSettings={settingsRows[0] ?? null}
+        providerConfigs={providerConfigs}
         org={org}
         currentUserId={session.user.id}
         canManage={canManage}

@@ -12,7 +12,7 @@ import { createSubagentTool } from "@/lib/tools/subagent"
 import { webSearchTool } from "@/lib/tools/web-search"
 import { createPlanTool, updateStepStatusTool } from "@/lib/tools/workflow"
 import { createLanguageModel, geminiModel } from "../models"
-import type { OrgSettings } from "@/db/settings-schema"
+import type { ProviderConfigs } from "@/db/settings-schema"
 import type { TelemetryContext } from "@/lib/middleware/telemetry"
 
 const instructions = `You are a capable AI assistant with access to a set of tools chosen by the user.
@@ -54,13 +54,14 @@ export type ToolName = (typeof ALL_TOOL_NAMES)[number]
 export function createMainAgent(
   organizationId: string,
   enabledToolNames: string[] = [...ALL_TOOL_NAMES],
-  settings: OrgSettings | null = null,
+  providerConfigs: ProviderConfigs | null = null,
+  modelString: string = "google:gemini-2.5-flash",
   telemetry?: TelemetryContext,
   mcpTools: Record<string, unknown> = {},
 ) {
-  const model = createLanguageModel(settings, telemetry)
+  const model = createLanguageModel(providerConfigs, modelString, telemetry)
   const { memoryStoreTool, memoryRecallTool, memoryForgetTool } =
-    createMemoryTools(organizationId, settings)
+    createMemoryTools(organizationId, providerConfigs)
 
   const allTools: ToolSet = {
     webSearch: webSearchTool,
@@ -95,5 +96,5 @@ export function createMainAgent(
 }
 
 // Type-inference reference — always includes all tools so AgentUIMessage covers every tool part type
-const _ref = createMainAgent("__type_ref__", [...ALL_TOOL_NAMES], null)
+const _ref = createMainAgent("__type_ref__", [...ALL_TOOL_NAMES], null, "google:gemini-2.5-flash")
 export type AgentUIMessage = InferAgentUIMessage<typeof _ref>

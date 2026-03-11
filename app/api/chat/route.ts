@@ -7,6 +7,7 @@ import { db } from "@/db/drizzle"
 import { installedTools } from "@/db/marketplace-schema"
 import { mcpServers } from "@/db/mcp-schema"
 import { orgSettings } from "@/db/settings-schema"
+import type { ProviderConfigs } from "@/db/settings-schema"
 import { resolveEnabledTools } from "@/lib/marketplace"
 import { createMainAgent } from "@/lib/agents/main-agent"
 
@@ -69,9 +70,16 @@ export async function POST(req: Request) {
   ])
 
   const enabledToolNames = resolveEnabledTools(installed.map((r) => r.itemId))
-  const settings = settingsRow[0] ?? null
+  const row = settingsRow[0] ?? null
+  const providerConfigs: ProviderConfigs = row?.providerConfigs
+    ? JSON.parse(row.providerConfigs)
+    : {}
 
-  const { messages, chatId }: { messages: UIMessage[]; chatId?: string } = await req.json()
+  const { messages, chatId, model = "google:gemini-2.5-flash" }: {
+    messages: UIMessage[]
+    chatId?: string
+    model?: string
+  } = await req.json()
 
   // Connect to installed MCP servers and collect their tools
   const mcpClients: Awaited<ReturnType<typeof experimental_createMCPClient>>[] = []
@@ -92,7 +100,7 @@ export async function POST(req: Request) {
 
   try {
     return await createAgentUIStreamResponse({
-      agent: createMainAgent(organizationId, enabledToolNames, settings, {
+      agent: createMainAgent(organizationId, enabledToolNames, providerConfigs, model, {
         chatId: chatId ?? null,
         organizationId,
       }, mcpTools),

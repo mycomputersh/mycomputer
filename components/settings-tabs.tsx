@@ -1,7 +1,10 @@
 "use client"
 
-import { useState } from "react"
 import { KeyRound, Users } from "lucide-react"
+import { useState } from "react"
+import { InviteMemberDialog } from "@/components/invite-member-dialog"
+import { RemoveMemberButton } from "@/components/remove-member-button"
+import { SettingsForm } from "@/components/settings-form"
 import { Badge } from "@/components/ui/badge"
 import {
   Table,
@@ -11,11 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { InviteMemberDialog } from "@/components/invite-member-dialog"
-import { RemoveMemberButton } from "@/components/remove-member-button"
-import { SettingsForm } from "@/components/settings-form"
+import type { ProviderConfigs } from "@/db/settings-schema"
 import { cn } from "@/lib/utils"
-import type { OrgSettings } from "@/db/settings-schema"
 
 type Member = {
   id: string
@@ -38,7 +38,7 @@ type Org = {
 }
 
 type Props = {
-  initialSettings: OrgSettings | null
+  providerConfigs: ProviderConfigs
   org: Org
   currentUserId: string
   canManage: boolean
@@ -62,7 +62,7 @@ function RoleBadge({ role }: { role: string }) {
 }
 
 export function SettingsTabs({
-  initialSettings,
+  providerConfigs,
   org,
   currentUserId,
   canManage,
@@ -77,13 +77,14 @@ export function SettingsTabs({
         <nav className="flex flex-col gap-0.5">
           {navItems.map(({ id, label, icon: Icon }) => (
             <button
+              type="button"
               key={id}
               onClick={() => setActive(id)}
               className={cn(
                 "flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs transition-colors",
                 active === id
                   ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               <Icon className="size-4 shrink-0" />
@@ -94,9 +95,9 @@ export function SettingsTabs({
       </aside>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-8">
+      <div className="flex-1 overflow-y-auto">
         {active === "api-keys" && (
-          <SettingsForm initialSettings={initialSettings} />
+          <SettingsForm initialProviderConfigs={providerConfigs} />
         )}
 
         {active === "members" && (

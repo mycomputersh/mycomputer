@@ -5,7 +5,8 @@ import { and, eq, sql } from "drizzle-orm"
 import { nanoid } from "nanoid"
 import { db } from "@/db/drizzle"
 import { agentMemories } from "@/db/memory-schema"
-import { createEmbeddingModel, type OrgSettings } from "@/lib/models"
+import { createEmbeddingModel } from "@/lib/models"
+import type { ProviderConfigs } from "@/db/settings-schema"
 
 type EmbeddingModelInstance = ReturnType<typeof createEmbeddingModel>
 
@@ -26,9 +27,9 @@ async function getEmbedding(
 
 // ─── Tool factory ────────────────────────────────────────────────────────────
 
-export function createMemoryTools(organizationId: string, settings: OrgSettings | null = null) {
-  const embeddingModel = createEmbeddingModel(settings)
-  const isGoogle = (settings?.embeddingProvider ?? settings?.aiProvider ?? "google") === "google"
+export function createMemoryTools(organizationId: string, providerConfigs: ProviderConfigs | null = null) {
+  const embeddingModel = createEmbeddingModel(providerConfigs)
+  const isGoogle = !providerConfigs?.["openai"]?.apiKey && !process.env.OPENAI_API_KEY
   const memoryStoreTool = tool({
     description:
       "Store information in persistent semantic memory. Use for facts, preferences, or context to recall later.",

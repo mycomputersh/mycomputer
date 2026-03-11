@@ -15,16 +15,7 @@ import {
   Trash2,
   type LucideIcon,
 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -101,7 +92,7 @@ const FALLBACK_CONFIG = {
   dot: "bg-muted-foreground",
 }
 
-// ─── Built-in Tool Card ────────────────────────────────────────────────────────
+// ─── Built-in Tool Row ────────────────────────────────────────────────────────
 
 function ToolCard({
   item,
@@ -127,70 +118,49 @@ function ToolCard({
   }
 
   return (
-    <Card
+    <div
       className={cn(
-        "flex flex-col transition-shadow hover:shadow-md",
-        isInstalled && "ring-primary/30 bg-primary/[0.02]",
+        "flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors hover:bg-accent/40",
+        isInstalled && "bg-primary/[0.02]",
       )}
     >
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <div
+      <div
+        className={cn(
+          "flex size-7 shrink-0 items-center justify-center rounded-md",
+          cfg.iconBg,
+        )}
+      >
+        <Icon className="size-3.5" />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium truncate">{item.title}</span>
+          <span
             className={cn(
-              "flex size-9 shrink-0 items-center justify-center rounded-lg",
-              cfg.iconBg,
+              "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium shrink-0",
+              cfg.badge,
             )}
           >
-            <Icon className="size-4" />
-          </div>
-          {isInstalled && (
-            <Badge variant="outline" className="text-xs text-primary border-primary/40 shrink-0">
-              Installed
-            </Badge>
-          )}
+            {item.category}
+          </span>
         </div>
-        <CardTitle className="mt-2 text-sm font-semibold">{item.title}</CardTitle>
-        <CardDescription className="line-clamp-2">{item.description}</CardDescription>
-      </CardHeader>
+        <p className="text-xs text-muted-foreground truncate mt-0.5">{item.description}</p>
+      </div>
 
-      <CardContent className="flex-1">
-        <span
-          className={cn(
-            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
-            cfg.badge,
-          )}
-        >
-          <span className={cn("size-1.5 rounded-full", cfg.dot)} />
-          {item.category}
-        </span>
-
-        <div className="mt-3 flex flex-wrap gap-1">
-          {item.tools.map((t) => (
-            <code
-              key={t}
-              className="rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground"
-            >
-              {t}
-            </code>
-          ))}
-        </div>
-      </CardContent>
-
-      <CardFooter className="border-t pt-3">
-        <Button
-          size="sm"
-          variant={isInstalled ? "outline" : "default"}
-          onClick={toggle}
-          disabled={loading}
-          className={cn(
-            "ml-auto h-7 text-xs",
-            isInstalled && "text-destructive border-destructive/40 hover:bg-destructive/10",
-          )}
-        >
-          {loading ? "…" : isInstalled ? "Uninstall" : "Install"}
-        </Button>
-      </CardFooter>
-    </Card>
+      <Button
+        size="sm"
+        variant={isInstalled ? "outline" : "default"}
+        onClick={toggle}
+        disabled={loading}
+        className={cn(
+          "h-6 px-2 text-xs shrink-0",
+          isInstalled && "text-destructive border-destructive/40 hover:bg-destructive/10",
+        )}
+      >
+        {loading ? "…" : isInstalled ? "Uninstall" : "Install"}
+      </Button>
+    </div>
   )
 }
 
@@ -216,40 +186,32 @@ function McpServerCard({
   }
 
   return (
-    <Card className="flex flex-col ring-primary/20 bg-primary/[0.02] hover:shadow-md transition-shadow">
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-            <Server className="size-4" />
-          </div>
-          <Badge variant="outline" className="text-xs text-primary border-primary/40 shrink-0">
-            Connected
-          </Badge>
+    <div className="flex items-center gap-3 rounded-lg border px-3 py-2.5 bg-primary/[0.02] hover:bg-accent/40 transition-colors">
+      <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+        <Server className="size-3.5" />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium truncate">{server.name}</span>
+          <span className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 shrink-0">
+            MCP
+          </span>
         </div>
-        <CardTitle className="mt-2 text-sm font-semibold">{server.name}</CardTitle>
-        <CardDescription className="font-mono text-xs truncate">{server.url}</CardDescription>
-      </CardHeader>
+        <p className="text-xs text-muted-foreground font-mono truncate mt-0.5">{server.url}</p>
+      </div>
 
-      <CardContent className="flex-1">
-        <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
-          <span className="size-1.5 rounded-full bg-indigo-500" />
-          MCP Server
-        </span>
-      </CardContent>
-
-      <CardFooter className="border-t pt-3">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={remove}
-          disabled={removing}
-          className="ml-auto h-7 text-xs text-destructive border-destructive/40 hover:bg-destructive/10"
-        >
-          <Trash2 className="size-3 mr-1" />
-          {removing ? "…" : "Remove"}
-        </Button>
-      </CardFooter>
-    </Card>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={remove}
+        disabled={removing}
+        className="h-6 px-2 text-xs shrink-0 text-destructive border-destructive/40 hover:bg-destructive/10"
+      >
+        <Trash2 className="size-3 mr-1" />
+        {removing ? "…" : "Remove"}
+      </Button>
+    </div>
   )
 }
 
@@ -448,7 +410,7 @@ export function MarketplaceGrid({
               <p className="mt-1 text-xs text-muted-foreground">Try a different search or category</p>
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="flex flex-col gap-1.5">
               {visibleItems.map((item) => (
                 <ToolCard key={item.id} item={item} installed={item.installed} />
               ))}
@@ -483,7 +445,7 @@ export function MarketplaceGrid({
               </p>
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="flex flex-col gap-1.5">
               {mcpList.map((server) => (
                 <McpServerCard
                   key={server.id}
