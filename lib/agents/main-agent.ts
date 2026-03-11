@@ -56,6 +56,7 @@ export function createMainAgent(
   enabledToolNames: string[] = [...ALL_TOOL_NAMES],
   settings: OrgSettings | null = null,
   telemetry?: TelemetryContext,
+  mcpTools: Record<string, unknown> = {},
 ) {
   const model = createLanguageModel(settings, telemetry)
   const { memoryStoreTool, memoryRecallTool, memoryForgetTool } =
@@ -78,9 +79,12 @@ export function createMainAgent(
   }
 
   const enabled = new Set(enabledToolNames)
-  const tools = Object.fromEntries(
+  const builtinTools = Object.fromEntries(
     Object.entries(allTools).filter(([key]) => enabled.has(key)),
   )
+
+  // Merge MCP tools (prefixed to avoid collisions)
+  const tools: ToolSet = { ...builtinTools, ...(mcpTools as ToolSet) }
 
   return new ToolLoopAgent({
     model,

@@ -8,6 +8,7 @@ export default defineConfig({
     "./db/auth-schema.ts",
     "./db/chat-schema.ts",
     "./db/marketplace-schema.ts",
+    "./db/mcp-schema.ts",
     "./db/memory-schema.ts",
     "./db/settings-schema.ts",
     "./db/telemetry-schema.ts",

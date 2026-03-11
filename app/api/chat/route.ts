@@ -1,9 +1,11 @@
 import { createAgentUIStreamResponse, type UIMessage } from "ai"
+import { experimental_createMCPClient } from "@ai-sdk/mcp"
 import { eq } from "drizzle-orm"
 import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { db } from "@/db/drizzle"
 import { installedTools } from "@/db/marketplace-schema"
+import { mcpServers } from "@/db/mcp-schema"
 import { orgSettings } from "@/db/settings-schema"
 import { resolveEnabledTools } from "@/lib/marketplace"
 import { createMainAgent } from "@/lib/agents/main-agent"
@@ -50,7 +52,7 @@ export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() })
   const organizationId = session?.session.activeOrganizationId ?? "personal"
 
-  const [installed, settingsRow] = await Promise.all([
+  const [installed, settingsRow, installedMcpServers] = await Promise.all([
     db
       .select({ itemId: installedTools.itemId })
       .from(installedTools)
@@ -60,6 +62,10 @@ export async function POST(req: Request) {
       .from(orgSettings)
       .where(eq(orgSettings.organizationId, organizationId))
       .limit(1),
+    db
+      .select()
+      .from(mcpServers)
+      .where(eq(mcpServers.organizationId, organizationId)),
   ])
 
   const enabledToolNames = resolveEnabledTools(installed.map((r) => r.itemId))
@@ -67,15 +73,33 @@ export async function POST(req: Request) {
 
   const { messages, chatId }: { messages: UIMessage[]; chatId?: string } = await req.json()
 
+  // Connect to installed MCP servers and collect their tools
+  const mcpClients: Awaited<ReturnType<typeof experimental_createMCPClient>>[] = []
+  const mcpTools: Record<string, unknown> = {}
+
+  for (const server of installedMcpServers) {
+    try {
+      const client = await experimental_createMCPClient({
+        transport: { type: "sse", url: server.url },
+      })
+      mcpClients.push(client)
+      const tools = await client.tools()
+      Object.assign(mcpTools, tools)
+    } catch {
+      // Skip unreachable MCP servers gracefully
+    }
+  }
+
   try {
     return await createAgentUIStreamResponse({
       agent: createMainAgent(organizationId, enabledToolNames, settings, {
         chatId: chatId ?? null,
         organizationId,
-      }),
+      }, mcpTools),
       uiMessages: messages,
     })
   } catch (err) {
+    for (const client of mcpClients) client.close()
     const { status, message } = classifyError(err)
     return Response.json({ error: message }, { status })
   }
