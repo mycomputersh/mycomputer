@@ -55,7 +55,7 @@ export default async function DashboardLayout({
 
   return (
     <ChatSidebarProvider initialFolders={folderRows} initialChats={chatRows}>
-      <SidebarProvider>
+      <SidebarProvider className="h-svh overflow-hidden">
         <DashboardSidebar
           organizations={organizations}
           activeOrg={activeOrg}
@@ -65,7 +65,7 @@ export default async function DashboardLayout({
             image: session.user.image,
           }}
         />
-        <SidebarInset className="overflow-hidden">
+        <SidebarInset className="h-full min-h-0 overflow-hidden">
           {children}
         </SidebarInset>
       </SidebarProvider>

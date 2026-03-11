@@ -35,6 +35,7 @@ export default async function ExistingChatPage({
     <ChatView
       key={id}
       chatId={id}
+      title={chat.title}
       initialMessages={(chat.messages ?? []) as UIMessage[]}
       initialError={chat.lastError ?? null}
       availableModels={buildAvailableModels(providerConfigs)}

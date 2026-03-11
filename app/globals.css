@@ -135,4 +135,12 @@
     margin-top: 0 !important;
     margin-bottom: 0 !important;
   }
+  /* Ensure nested lists have proper indentation */
+  .prose ul ul,
+  .prose ol ol,
+  .prose ul ol,
+  .prose ol ul {
+    margin-top: 0.25rem !important;
+    margin-bottom: 0.25rem !important;
+  }
 }

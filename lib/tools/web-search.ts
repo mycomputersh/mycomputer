@@ -96,7 +96,7 @@ async function search(query: string, maxResults: number): Promise<SearchResult[]
 
 export const webSearchTool = tool({
   description:
-    "Search the web for real-time information. Returns titles, URLs, and snippets from search results.",
+    "Search the web for real-time information. Returns titles, URLs, and snippets. After calling this, you MUST immediately call fetchPage for ALL result URLs in parallel to get their full content.",
   inputSchema: z.object({
     query: z.string().describe("The search query"),
     maxResults: z

@@ -52,6 +52,7 @@ import type { CitationSource } from "@/lib/tools/sources"
 
 interface ChatViewProps {
   chatId: string | null
+  title?: string
   initialMessages?: UIMessage[]
   initialError?: string | null
   availableModels?: AvailableModel[]
@@ -60,13 +61,14 @@ interface ChatViewProps {
 const SUGGESTIONS = [
   "Search for the latest AI news",
   "Write and run a Fibonacci function",
-  "Plan a 3-step research workflow",
+  "Plan and execute a research workflow on quantum computing",
   "Delegate a research task to a subagent",
   "Remember my name and recall it later",
 ]
 
 export function ChatView({
   chatId: initialChatId,
+  title,
   initialMessages = [],
   initialError = null,
   availableModels = [],
@@ -195,7 +197,10 @@ export function ChatView({
 
   return (
     <div className="flex h-full min-w-0">
-      <div className="flex flex-col flex-1 min-w-0 h-full">
+      <div className="flex flex-col flex-1 min-w-0 min-h-0">
+        <header className="flex h-11 shrink-0 items-center border-b px-4">
+          <h1 className="text-xs font-semibold truncate">{title ?? "New Chat"}</h1>
+        </header>
         <Conversation className="flex-1 min-h-0">
           <ConversationContent className="px-4 py-6 max-w-3xl mx-auto w-full">
             {messages.length === 0 && (
@@ -316,7 +321,7 @@ export function ChatView({
                 </Fragment>
               )
             })}
-            {status === "submitted" && (
+            {(status === "submitted" || status === "streaming") && (
               <div className="flex items-center gap-2 px-1 py-2">
                 <div className="flex gap-1">
                   <span className="size-1.5 rounded-full bg-muted-foreground/50 animate-bounce [animation-delay:0ms]" />

@@ -40,26 +40,23 @@ function JsonOutput({ data }: { data: unknown }) {
 
 export function WebSearchRenderer({ part }: { part: WebSearchInvocation }) {
   return (
-    <Tool defaultOpen={part.state === "output-available"}>
+    <Tool defaultOpen={false}>
       <ToolHeader type="tool-webSearch" state={part.state} title="Web Search" />
       <ToolContent>
         <ToolInput input={part.input} />
         <ToolOutput
           output={
             part.state === "output-available" && part.output ? (
-              <div className="space-y-2 p-3">
+              <div className="divide-y text-xs">
                 {part.output.results.map(
                   (
                     r: { title: string; url: string; snippet: string },
                     i: number,
                   ) => (
-                    <div
-                      key={i}
-                      className="text-sm border-b last:border-0 pb-2"
-                    >
-                      <p className="font-medium">{r.title}</p>
-                      <p className="text-xs text-muted-foreground">{r.url}</p>
-                      <p className="text-xs mt-1">{r.snippet}</p>
+                    <div key={i} className="py-2 px-3 space-y-0.5">
+                      <p className="font-medium leading-snug">{r.title}</p>
+                      <p className="text-muted-foreground truncate">{r.url}</p>
+                      <p className="text-muted-foreground leading-snug">{r.snippet}</p>
                     </div>
                   ),
                 )}
@@ -137,7 +134,7 @@ export function FetchPageRenderer({ part }: { part: FetchPageInvocation }) {
 
 export function CodeRunnerRenderer({ part }: { part: CodeRunnerInvocation }) {
   return (
-    <Tool defaultOpen={part.state === "output-available"}>
+    <Tool defaultOpen={false}>
       <ToolHeader type="tool-runCode" state={part.state} title="Run Code" />
       <ToolContent>
         <ToolInput input={part.input} />
@@ -191,7 +188,7 @@ export function MemoryRecallRenderer({
   part: MemoryRecallInvocation
 }) {
   return (
-    <Tool defaultOpen={part.state === "output-available"}>
+    <Tool defaultOpen={false}>
       <ToolHeader
         type="tool-memoryRecall"
         state={part.state}
@@ -265,7 +262,7 @@ export function MemoryForgetRenderer({
 
 export function CreatePlanRenderer({ part }: { part: CreatePlanInvocation }) {
   return (
-    <Tool defaultOpen={part.state === "output-available"}>
+    <Tool defaultOpen={false}>
       <ToolHeader
         type="tool-createPlan"
         state={part.state}
@@ -449,7 +446,7 @@ export function WriteFileRenderer({ part }: { part: WriteFileInvocation }) {
 
 export function ReadFileRenderer({ part }: { part: ReadFileInvocation }) {
   return (
-    <Tool defaultOpen={part.state === "output-available"}>
+    <Tool defaultOpen={false}>
       <ToolHeader type="tool-readFile" state={part.state} title="Read File" />
       <ToolContent>
         <ToolInput input={part.input} />
@@ -482,7 +479,7 @@ export function McpToolRenderer({ part }: { part: DynamicToolUIPart }) {
     .replace(/\b\w/g, (c) => c.toUpperCase())
 
   return (
-    <Tool defaultOpen={part.state === "output-available"}>
+    <Tool defaultOpen={false}>
       <ToolHeader
         type="dynamic-tool"
         toolName={part.toolName}
@@ -504,7 +501,7 @@ export function McpToolRenderer({ part }: { part: DynamicToolUIPart }) {
 
 export function ListFilesRenderer({ part }: { part: ListFilesInvocation }) {
   return (
-    <Tool defaultOpen={part.state === "output-available"}>
+    <Tool defaultOpen={false}>
       <ToolHeader type="tool-listFiles" state={part.state} title="List Files" />
       <ToolContent>
         <ToolInput input={part.input} />

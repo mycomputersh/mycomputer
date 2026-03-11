@@ -327,7 +327,23 @@ const streamdownPlugins = { cjk, code, math, mermaid }
 export const MessageResponse = memo(
   ({ className, ...props }: MessageResponseProps) => (
     <Streamdown
-      className={cn(className)}
+      className={cn(
+        "prose prose-sm dark:prose-invert max-w-none",
+        // tighter spacing
+        "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        "[&_p]:my-1 [&_p]:leading-snug",
+        "[&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_li]:leading-snug",
+        "[&_h1]:mb-1 [&_h2]:mb-1 [&_h3]:mb-1 [&_h4]:mb-0.5",
+        "[&_h1]:mt-3 [&_h2]:mt-2.5 [&_h3]:mt-2 [&_h4]:mt-1.5",
+        "[&_blockquote]:my-1 [&_blockquote]:py-0.5",
+        "[&_hr]:my-2",
+        // code blocks
+        "prose-pre:p-0 prose-pre:bg-transparent prose-pre:border-none prose-pre:rounded-none prose-pre:my-1",
+        "prose-code:before:content-none prose-code:after:content-none prose-code:text-xs",
+        // links
+        "prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
+        className,
+      )}
       plugins={streamdownPlugins}
       {...props}
     />

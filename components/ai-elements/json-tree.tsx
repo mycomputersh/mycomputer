@@ -29,7 +29,7 @@ function JsonNode({
     <span className="text-muted-foreground/70">{label}: </span>
   ) : null
 
-  if (value === null) {
+  if (value === null || value === undefined) {
     return (
       <div className="flex items-center gap-0.5">
         {prefix}
@@ -73,7 +73,7 @@ function JsonNode({
   const isArray = Array.isArray(value)
   const entries = isArray
     ? (value as JsonValue[]).map((v, i) => [i, v] as [number, JsonValue])
-    : Object.entries(value as Record<string, JsonValue>) as [string, JsonValue][]
+    : Object.entries((value as Record<string, JsonValue>) ?? {}) as [string, JsonValue][]
 
   const open_bracket = isArray ? "[" : "{"
   const close_bracket = isArray ? "]" : "}"
@@ -136,6 +136,7 @@ function JsonNode({
 }
 
 export function JsonTree({ data }: { data: unknown }) {
+  if (data === null || data === undefined) return null
   return (
     <div className="font-mono text-[11px] leading-5 p-2 overflow-auto max-h-64">
       <JsonNode value={data as JsonValue} />

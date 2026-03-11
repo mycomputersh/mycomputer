@@ -31,7 +31,7 @@ async function getBrowser(): Promise<Browser> {
 
 // ─── Page content extraction ──────────────────────────────────────────────────
 
-async function fetchPageContent(
+export async function fetchPageContent(
   url: string,
   timeout: number,
 ): Promise<{ title: string; content: string; url: string }> {
