@@ -11,6 +11,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { InlineCitation } from "@/components/ui/inline-citation"
+import type { CitationSource } from "@/lib/tools/sources"
 import { cn } from "@/lib/utils"
 import { cjk } from "@streamdown/cjk"
 import { code } from "@streamdown/code"
@@ -343,6 +345,65 @@ export const MessageResponse = memo(
 )
 
 MessageResponse.displayName = "MessageResponse"
+
+// ─── Citation-aware message response ─────────────────────────────────────────
+// Splits text on [n] markers, renders markdown chunks via Streamdown and
+// citation markers as inline hoverable badges.
+
+export type CitationMessageResponseProps = ComponentProps<typeof Streamdown> & {
+  sourceMap: Map<number, CitationSource>
+}
+
+export const CitationMessageResponse = memo(
+  ({ className, children, sourceMap, ...props }: CitationMessageResponseProps) => {
+    const text = typeof children === "string" ? children : ""
+
+    // No citations in text — fall back to normal markdown renderer
+    if (!text || !sourceMap.size || !/\[\d+\]/.test(text)) {
+      return (
+        <MessageResponse className={className} {...props}>
+          {children}
+        </MessageResponse>
+      )
+    }
+
+    // Split preserving [n] markers
+    const parts = text.split(/(\[\d+\])/)
+
+    return (
+      <div
+        className={cn(
+          "prose prose-sm dark:prose-invert max-w-none",
+          "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+          "prose-pre:p-0 prose-pre:bg-transparent prose-pre:rounded-none",
+          "prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
+          className,
+        )}
+      >
+        {parts.map((part, i) => {
+          const match = part.match(/^\[(\d+)\]$/)
+          if (match) {
+            const num = Number(match[1])
+            const source = sourceMap.get(num)
+            if (source) return <InlineCitation key={i} sources={[source]} />
+            // Unknown citation number — render as plain text
+            return <span key={i}>{part}</span>
+          }
+          if (!part) return null
+          return (
+            <Streamdown key={i} plugins={streamdownPlugins} {...props}>
+              {part}
+            </Streamdown>
+          )
+        })}
+      </div>
+    )
+  },
+  (prev, next) =>
+    prev.children === next.children && prev.sourceMap === next.sourceMap,
+)
+
+CitationMessageResponse.displayName = "CitationMessageResponse"
 
 export type MessageToolbarProps = ComponentProps<"div">
 

@@ -10,12 +10,14 @@ import {
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation"
 import {
+  CitationMessageResponse,
   Message,
   MessageActions,
   MessageAction,
   MessageContent,
   MessageResponse,
 } from "@/components/ai-elements/message"
+import type { CitationSource } from "@/lib/tools/sources"
 import {
   PromptInput,
   PromptInputBody,
@@ -28,6 +30,7 @@ import {
   CodeRunnerRenderer,
   CreatePlanRenderer,
   FetchPageRenderer,
+  RegisterSourcesRenderer,
   ListFilesRenderer,
   MemoryForgetRenderer,
   MemoryRecallRenderer,
@@ -127,6 +130,17 @@ export function ChatView({ chatId: initialChatId, initialMessages = [] }: ChatVi
 
           {messages.map((message, messageIndex) => {
             const isLast = messageIndex === messages.length - 1
+
+            // Build a source map from all registerSources calls in this message
+            const sourceMap = new Map<number, CitationSource>()
+            for (const part of message.parts) {
+              if (part.type === "tool-registerSources" && part.input?.sources) {
+                for (const s of part.input.sources as CitationSource[]) {
+                  sourceMap.set(s.number, s)
+                }
+              }
+            }
+
             return (
               <Fragment key={message.id}>
                 {message.parts.map((part, partIndex) => {
@@ -137,7 +151,9 @@ export function ChatView({ chatId: initialChatId, initialMessages = [] }: ChatVi
                       <Fragment key={key}>
                         <Message from={message.role}>
                           <MessageContent>
-                            <MessageResponse>{part.text}</MessageResponse>
+                            <CitationMessageResponse sourceMap={sourceMap}>
+                              {part.text}
+                            </CitationMessageResponse>
                           </MessageContent>
                         </Message>
                         {message.role === "assistant" && isLast && (
@@ -159,6 +175,7 @@ export function ChatView({ chatId: initialChatId, initialMessages = [] }: ChatVi
 
                   if (part.type === "tool-webSearch") return <WebSearchRenderer key={key} part={part} />
                   if (part.type === "tool-fetchPage") return <FetchPageRenderer key={key} part={part} />
+                  if (part.type === "tool-registerSources") return <RegisterSourcesRenderer key={key} part={part} />
                   if (part.type === "tool-runCode") return <CodeRunnerRenderer key={key} part={part} />
                   if (part.type === "tool-memoryStore") return <MemoryStoreRenderer key={key} part={part} />
                   if (part.type === "tool-memoryRecall") return <MemoryRecallRenderer key={key} part={part} />

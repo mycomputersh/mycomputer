@@ -9,6 +9,7 @@ import type {
   MemoryRecallInvocation,
   MemoryStoreInvocation,
   ReadFileInvocation,
+  RegisterSourcesInvocation,
   SpawnSubagentInvocation,
   UpdateStepStatusInvocation,
   WebSearchInvocation,
@@ -68,6 +69,33 @@ export function WebSearchRenderer({ part }: { part: WebSearchInvocation }) {
         />
       </ToolContent>
     </Tool>
+  )
+}
+
+// ─── Register Sources (invisible — citations rendered inline in text) ─────────
+
+export function RegisterSourcesRenderer({
+  part,
+}: { part: RegisterSourcesInvocation }) {
+  if (part.state !== "output-available" || !part.input?.sources?.length) {
+    return null
+  }
+  return (
+    <div className="flex flex-wrap gap-1.5 text-xs text-muted-foreground">
+      <span className="font-medium">Sources:</span>
+      {(part.input.sources as { number: number; title: string; url: string }[]).map((s) => (
+        <a
+          key={s.number}
+          href={s.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 hover:bg-accent transition-colors"
+        >
+          <span className="text-[10px] font-semibold text-primary">[{s.number}]</span>
+          <span className="truncate max-w-32">{s.title}</span>
+        </a>
+      ))}
+    </div>
   )
 }
 

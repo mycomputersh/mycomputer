@@ -15,7 +15,7 @@ export const MARKETPLACE_ITEMS: MarketplaceItem[] = [
       "Search the internet for real-time information, news, and facts.",
     category: "Research",
     icon: "Globe",
-    tools: ["webSearch", "fetchPage"],
+    tools: ["webSearch", "fetchPage", "registerSources"],
   },
   {
     id: "code-runner",

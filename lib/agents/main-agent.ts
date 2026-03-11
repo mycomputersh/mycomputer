@@ -7,6 +7,7 @@ import {
   writeFileTool,
 } from "@/lib/tools/file-ops"
 import { createMemoryTools } from "@/lib/tools/memory"
+import { registerSourcesTool } from "@/lib/tools/sources"
 import { createSubagentTool } from "@/lib/tools/subagent"
 import { webSearchTool } from "@/lib/tools/web-search"
 import { createPlanTool, updateStepStatusTool } from "@/lib/tools/workflow"
@@ -22,12 +23,19 @@ const instructions = `You are a capable AI assistant with access to a set of too
 - When a task requires deep research or focused coding, delegate to a subagent via \`spawnSubagent\`
 - Combine tools creatively — e.g., search → analyze → write code → run code
 - Only use tools that are available to you
-- Be transparent about what you're doing at each step`
+- Be transparent about what you're doing at each step
+
+## Citations
+- Whenever you summarize, reference, or quote content from web searches or fetched pages, you MUST call \`registerSources\` first with every source you will cite
+- Then use [1], [2], … markers inline in your response to reference those sources
+- Every [n] marker must match a source registered in the same \`registerSources\` call
+- Do not use citation markers without first calling \`registerSources\``
 
 // All available tool names
 export const ALL_TOOL_NAMES = [
   "webSearch",
   "fetchPage",
+  "registerSources",
   "runCode",
   "memoryStore",
   "memoryRecall",
@@ -54,6 +62,7 @@ export function createMainAgent(
   const allTools: ToolSet = {
     webSearch: webSearchTool,
     fetchPage: fetchPageTool,
+    registerSources: registerSourcesTool,
     runCode: codeRunnerTool,
     memoryStore: memoryStoreTool,
     memoryRecall: memoryRecallTool,
