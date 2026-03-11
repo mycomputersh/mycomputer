@@ -1,24 +1,12 @@
 "use client"
 
-import type { UIMessage } from "ai"
-import type { ComponentProps, HTMLAttributes, ReactElement } from "react"
-
-import { Button } from "@/components/ui/button"
-import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { InlineCitation } from "@/components/ui/inline-citation"
-import type { CitationSource } from "@/lib/tools/sources"
-import { cn } from "@/lib/utils"
 import { cjk } from "@streamdown/cjk"
 import { code } from "@streamdown/code"
 import { math } from "@streamdown/math"
 import { mermaid } from "@streamdown/mermaid"
+import type { UIMessage } from "ai"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
+import type { ComponentProps, HTMLAttributes, ReactElement } from "react"
 import {
   createContext,
   memo,
@@ -29,6 +17,17 @@ import {
   useState,
 } from "react"
 import { Streamdown } from "streamdown"
+import { Button } from "@/components/ui/button"
+import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group"
+import { InlineCitation } from "@/components/ui/inline-citation"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import type { CitationSource } from "@/lib/tools/sources"
+import { cn } from "@/lib/utils"
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage["role"]
@@ -37,8 +36,10 @@ export type MessageProps = HTMLAttributes<HTMLDivElement> & {
 export const Message = ({ className, from, ...props }: MessageProps) => (
   <div
     className={cn(
-      "group flex w-full max-w-[95%] flex-col gap-2",
-      from === "user" ? "is-user ml-auto justify-end" : "is-assistant",
+      "group flex w-full flex-col gap-2",
+      from === "user"
+        ? "is-user ml-auto max-w-[72%] justify-end"
+        : "is-assistant max-w-[88%]",
       className,
     )}
     {...props}
@@ -326,17 +327,7 @@ const streamdownPlugins = { cjk, code, math, mermaid }
 export const MessageResponse = memo(
   ({ className, ...props }: MessageResponseProps) => (
     <Streamdown
-      className={cn(
-        // prose base
-        "prose prose-sm dark:prose-invert max-w-none",
-        // spacing resets
-        "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-        // inline code: keep streamdown/code block styles, just reset prose's pre padding
-        "prose-pre:p-0 prose-pre:bg-transparent prose-pre:rounded-none",
-        // links
-        "prose-a:text-primary prose-a:no-underline hover:prose-a:underline",
-        className,
-      )}
+      className={cn(className)}
       plugins={streamdownPlugins}
       {...props}
     />
@@ -355,7 +346,12 @@ export type CitationMessageResponseProps = ComponentProps<typeof Streamdown> & {
 }
 
 export const CitationMessageResponse = memo(
-  ({ className, children, sourceMap, ...props }: CitationMessageResponseProps) => {
+  ({
+    className,
+    children,
+    sourceMap,
+    ...props
+  }: CitationMessageResponseProps) => {
     const text = typeof children === "string" ? children : ""
 
     return (
