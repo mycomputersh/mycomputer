@@ -6,10 +6,11 @@ import {
   writeFileTool,
 } from "@/lib/tools/file-ops"
 import { createMemoryTools } from "@/lib/tools/memory"
-import { spawnSubagentTool } from "@/lib/tools/subagent"
+import { createSubagentTool } from "@/lib/tools/subagent"
 import { webSearchTool } from "@/lib/tools/web-search"
 import { createPlanTool, updateStepStatusTool } from "@/lib/tools/workflow"
-import { geminiModel } from "../models"
+import { createLanguageModel, geminiModel } from "../models"
+import type { OrgSettings } from "@/db/settings-schema"
 
 const instructions = `You are a capable AI assistant with access to a set of tools chosen by the user.
 
@@ -42,9 +43,11 @@ export type ToolName = (typeof ALL_TOOL_NAMES)[number]
 export function createMainAgent(
   organizationId: string,
   enabledToolNames: string[] = [...ALL_TOOL_NAMES],
+  settings: OrgSettings | null = null,
 ) {
+  const model = createLanguageModel(settings)
   const { memoryStoreTool, memoryRecallTool, memoryForgetTool } =
-    createMemoryTools(organizationId)
+    createMemoryTools(organizationId, settings)
 
   const allTools: ToolSet = {
     webSearch: webSearchTool,
@@ -54,7 +57,7 @@ export function createMainAgent(
     memoryForget: memoryForgetTool,
     createPlan: createPlanTool,
     updateStepStatus: updateStepStatusTool,
-    spawnSubagent: spawnSubagentTool,
+    spawnSubagent: createSubagentTool(model),
     writeFile: writeFileTool,
     readFile: readFileTool,
     listFiles: listFilesTool,
@@ -66,7 +69,7 @@ export function createMainAgent(
   )
 
   return new ToolLoopAgent({
-    model: geminiModel,
+    model,
     stopWhen: stepCountIs(30),
     instructions,
     tools,
@@ -74,5 +77,5 @@ export function createMainAgent(
 }
 
 // Type-inference reference — always includes all tools so AgentUIMessage covers every tool part type
-const _ref = createMainAgent("__type_ref__", [...ALL_TOOL_NAMES])
+const _ref = createMainAgent("__type_ref__", [...ALL_TOOL_NAMES], null)
 export type AgentUIMessage = InferAgentUIMessage<typeof _ref>

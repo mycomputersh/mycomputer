@@ -1,26 +1,34 @@
 import { embed } from "ai"
-import { google } from "@ai-sdk/google"
 import { tool, type UIToolInvocation } from "ai"
 import { z } from "zod"
 import { and, eq, sql } from "drizzle-orm"
 import { nanoid } from "nanoid"
 import { db } from "@/db/drizzle"
 import { agentMemories } from "@/db/memory-schema"
+import { createEmbeddingModel, type OrgSettings } from "@/lib/models"
 
-const embeddingModel = google.embedding("gemini-embedding-001")
+type EmbeddingModelInstance = ReturnType<typeof createEmbeddingModel>
 
-async function getEmbedding(text: string): Promise<number[]> {
+async function getEmbedding(
+  text: string,
+  model: EmbeddingModelInstance,
+  isGoogle: boolean,
+): Promise<number[]> {
   const { embedding } = await embed({
-    model: embeddingModel,
+    model,
     value: text,
-    providerOptions: { google: { taskType: "SEMANTIC_SIMILARITY" } },
+    ...(isGoogle
+      ? { providerOptions: { google: { taskType: "SEMANTIC_SIMILARITY", outputDimensionality: 1536 } } }
+      : {}),
   })
   return embedding
 }
 
 // ─── Tool factory ────────────────────────────────────────────────────────────
 
-export function createMemoryTools(organizationId: string) {
+export function createMemoryTools(organizationId: string, settings: OrgSettings | null = null) {
+  const embeddingModel = createEmbeddingModel(settings)
+  const isGoogle = (settings?.embeddingProvider ?? settings?.aiProvider ?? "google") === "google"
   const memoryStoreTool = tool({
     description:
       "Store information in persistent semantic memory. Use for facts, preferences, or context to recall later.",
@@ -29,7 +37,7 @@ export function createMemoryTools(organizationId: string) {
       content: z.string().describe("The content to remember"),
     }),
     execute: async ({ key, content }) => {
-      const embedding = await getEmbedding(content)
+      const embedding = await getEmbedding(content, embeddingModel, isGoogle)
       // Upsert: delete existing memory with same key first
       await db
         .delete(agentMemories)
@@ -58,7 +66,7 @@ export function createMemoryTools(organizationId: string) {
       limit: z.number().optional().describe("Max results to return (default 5)"),
     }),
     execute: async ({ query, limit }) => {
-      const queryEmbedding = await getEmbedding(query)
+      const queryEmbedding = await getEmbedding(query, embeddingModel, isGoogle)
       const embeddingStr = `[${queryEmbedding.join(",")}]`
 
       const results = await db
@@ -101,7 +109,7 @@ export function createMemoryTools(organizationId: string) {
 // ─── Type exports ─────────────────────────────────────────────────────────────
 // Dummy instance used only for type inference — no DB calls at module load time
 
-const _ref = createMemoryTools("__type_ref__")
+const _ref = createMemoryTools("__type_ref__", null)
 
 export type MemoryStoreInvocation = UIToolInvocation<typeof _ref.memoryStoreTool>
 export type MemoryRecallInvocation = UIToolInvocation<typeof _ref.memoryRecallTool>

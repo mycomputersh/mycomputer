@@ -4,6 +4,7 @@ import { headers } from "next/headers"
 import { auth } from "@/lib/auth"
 import { db } from "@/db/drizzle"
 import { installedTools } from "@/db/marketplace-schema"
+import { orgSettings } from "@/db/settings-schema"
 import { resolveEnabledTools } from "@/lib/marketplace"
 import { createMainAgent } from "@/lib/agents/main-agent"
 
@@ -13,18 +14,25 @@ export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() })
   const organizationId = session?.session.activeOrganizationId ?? "personal"
 
-  // Load which tools this org has installed
-  const installed = await db
-    .select({ itemId: installedTools.itemId })
-    .from(installedTools)
-    .where(eq(installedTools.organizationId, organizationId))
+  const [installed, settingsRow] = await Promise.all([
+    db
+      .select({ itemId: installedTools.itemId })
+      .from(installedTools)
+      .where(eq(installedTools.organizationId, organizationId)),
+    db
+      .select()
+      .from(orgSettings)
+      .where(eq(orgSettings.organizationId, organizationId))
+      .limit(1),
+  ])
 
   const enabledToolNames = resolveEnabledTools(installed.map((r) => r.itemId))
+  const settings = settingsRow[0] ?? null
 
   const { messages }: { messages: UIMessage[] } = await req.json()
 
   return createAgentUIStreamResponse({
-    agent: createMainAgent(organizationId, enabledToolNames),
+    agent: createMainAgent(organizationId, enabledToolNames, settings),
     uiMessages: messages,
   })
 }

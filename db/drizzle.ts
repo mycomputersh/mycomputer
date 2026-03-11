@@ -4,6 +4,7 @@ import * as authSchema from "./auth-schema"
 import * as chatSchema from "./chat-schema"
 import * as marketplaceSchema from "./marketplace-schema"
 import * as memorySchema from "./memory-schema"
+import * as settingsSchema from "./settings-schema"
 
 config({ path: ".env" }) // or .env.local
 
@@ -13,5 +14,6 @@ export const db = drizzle(process.env.DATABASE_URL, {
     ...chatSchema,
     ...marketplaceSchema,
     ...memorySchema,
+    ...settingsSchema,
   },
 })

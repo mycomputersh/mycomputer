@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN cd /tmp \
     && git clone --branch v0.8.2 --depth 1 https://github.com/pgvector/pgvector.git \
     && cd pgvector \
-    && make \
+    && make OPTFLAGS="" \
     && make install
 
 # Build pg_textsearch

@@ -9,6 +9,7 @@ export default defineConfig({
     "./db/chat-schema.ts",
     "./db/marketplace-schema.ts",
     "./db/memory-schema.ts",
+    "./db/settings-schema.ts",
   ],
   dialect: "postgresql",
   dbCredentials: {

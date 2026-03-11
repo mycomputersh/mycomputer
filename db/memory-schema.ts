@@ -24,8 +24,9 @@ export const agentMemories = pgTable(
     organizationId: text("organization_id").notNull(),
     key: text("key").notNull(),
     content: text("content").notNull(),
-    // gemini-embedding-001 produces 3072-dimensional embeddings
-    embedding: vector("embedding", { dimensions: 3072 }).notNull(),
+    // 1536 dims — works for both OpenAI (text-embedding-3-small) and Google
+    // (gemini-embedding-001 with outputDimensionality: 1536)
+    embedding: vector("embedding", { dimensions: 1536 }).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
