@@ -1,36 +1,148 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Computer Agent
+
+A full-stack AI agent platform built with Next.js. Chat with a multi-tool agent that can search the web, run code, manage files, store memories, plan workflows, and delegate tasks to subagents. Supports multiple AI providers and extends with MCP servers.
+
+## Features
+
+- **Multi-model support** — Google Gemini, OpenAI, Anthropic, Groq, Mistral, Ollama
+- **Built-in tools** — web search, code execution, file system, semantic memory, workflow planner, subagents
+- **MCP integration** — connect any Model Context Protocol server to extend agent capabilities
+- **Marketplace** — install/uninstall tools per organization
+- **Organizations & teams** — multi-tenant with roles, invitations, and per-org settings
+- **LLM telemetry** — trace every call with token counts, latency, and tool usage
+- **Persistent chat** — conversations saved to PostgreSQL with folder organization
+
+## Tech Stack
+
+- **Framework:** Next.js 16 (App Router, React 19)
+- **AI:** Vercel AI SDK v6 (`ToolLoopAgent`, streaming, MCP)
+- **Database:** PostgreSQL + Drizzle ORM (Neon-compatible)
+- **Auth:** Better Auth (email/password + Google OAuth, organizations)
+- **UI:** Tailwind CSS v4, shadcn/ui, Radix UI
+- **Memory:** pgvector for semantic similarity search
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- PostgreSQL database (local or [Neon](https://neon.tech))
+- At least one AI provider API key
+
+### 1. Clone and install
+
+```bash
+git clone <repo-url>
+cd computer-agent
+npm install
+```
+
+### 2. Configure environment
+
+Copy and fill in the environment variables:
+
+```bash
+cp .env.example .env
+```
+
+```env
+# Database
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/computer_agent
+
+# Auth
+BETTER_AUTH_SECRET=your-secret-key
+BETTER_AUTH_URL=http://localhost:3000
+
+# Google OAuth (optional)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# AI Providers — add whichever you want to use
+GOOGLE_GENERATIVE_AI_API_KEY=
+```
+
+Additional provider keys (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GROQ_API_KEY`, `MISTRAL_API_KEY`) can be configured per-organization in the Settings page after signup.
+
+### 3. Set up the database
+
+```bash
+npm run db:push
+```
+
+This applies the Drizzle schema to your PostgreSQL database, including the `pgvector` extension required for semantic memory.
+
+### 4. Run the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) and sign up to get started.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Built-in Tools
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Tools are installed per organization from the **Marketplace** page:
 
-## Learn More
+| Tool | Description |
+|------|-------------|
+| **Web Search** | Real-time search + automatic page fetching for full content |
+| **Code Runner** | Execute Python, JavaScript, TypeScript, or Bash in a sandbox |
+| **Semantic Memory** | Store and recall information using vector similarity search |
+| **File System** | Read, write, and list files in a virtual workspace |
+| **Workflow Planner** | Create step-by-step plans and track progress |
+| **Subagents** | Spawn specialized agents to handle focused subtasks in parallel |
 
-To learn more about Next.js, take a look at the following resources:
+## MCP Servers
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Connect any [Model Context Protocol](https://modelcontextprotocol.io) server from the Marketplace page. Enter the server URL and it will be available as tools in the agent.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+```
+app/
+  (auth)/           # Login / signup pages
+  (dashboard)/
+    dashboard/
+      chat/         # Chat pages (new + existing)
+      marketplace/  # Tool & MCP server management
+      settings/     # Provider API keys, team members
+api/
+  auth/             # Better Auth handler
+  chat/             # Main agent streaming endpoint
+  chats/            # Chat CRUD
+  folders/          # Chat folder CRUD
+  marketplace/      # Tool install/uninstall, MCP servers
+  settings/         # Provider config
+  traces/           # LLM telemetry
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+components/
+  ai-elements/      # Conversation, Message, PromptInput, Tool UI primitives
+  tool-renderers/   # Per-tool result displays
+  dashboard-sidebar/
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+lib/
+  agents/           # ToolLoopAgent setup and instructions
+  tools/            # Tool implementations
+  models.ts         # Provider config and model creation
+
+db/                 # Drizzle schemas
+```
+
+## Scripts
+
+```bash
+npm run dev          # Start dev server
+npm run build        # Production build
+npm run lint         # Biome lint check
+npm run format       # Biome format
+npm run db:push      # Push schema to database
+npm run db:studio    # Open Drizzle Studio
+```
+
+## Deployment
+
+The app works on any Node.js host. For Vercel:
+
+1. Set all environment variables in project settings
+2. Ensure your `DATABASE_URL` points to a serverless-compatible PostgreSQL (e.g. Neon)
+3. Deploy — the API routes have `maxDuration: 60` set for long-running agent calls
