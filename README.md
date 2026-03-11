@@ -2,6 +2,12 @@
 
 A full-stack AI agent platform built with Next.js. Chat with a multi-tool agent that can search the web, run code, manage files, store memories, plan workflows, and delegate tasks to subagents. Supports multiple AI providers and extends with MCP servers.
 
+## Screenshots
+
+![Chat view showing a research workflow plan on quantum computing](docs/images/image2.jpeg)
+
+![Marketplace showing built-in tools](docs/images/image1.jpeg)
+
 ## Features
 
 - **Multi-model support** — Google Gemini, OpenAI, Anthropic, Groq, Mistral, Ollama
