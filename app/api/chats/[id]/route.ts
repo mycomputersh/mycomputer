@@ -46,6 +46,7 @@ export async function PATCH(
   if (body.title !== undefined) updates.title = body.title
   if (body.folderId !== undefined) updates.folderId = body.folderId
   if (body.messages !== undefined) updates.messages = body.messages
+  if ("lastError" in body) updates.lastError = body.lastError ?? null
 
   await db.update(chats).set(updates).where(eq(chats.id, id))
 

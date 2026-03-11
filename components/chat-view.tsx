@@ -3,7 +3,8 @@
 import { Fragment, useRef, useState } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport, type UIMessage } from "ai"
-import { CopyIcon, RefreshCcwIcon } from "lucide-react"
+import { CopyIcon, RefreshCcwIcon, AlertCircleIcon } from "lucide-react"
+import { toast } from "sonner"
 import {
   Conversation,
   ConversationContent,
@@ -47,6 +48,7 @@ import { useChatSidebar } from "@/components/chat-sidebar-context"
 interface ChatViewProps {
   chatId: string | null
   initialMessages?: UIMessage[]
+  initialError?: string | null
 }
 
 const SUGGESTIONS = [
@@ -57,35 +59,70 @@ const SUGGESTIONS = [
   "Remember my name and recall it later",
 ]
 
-export function ChatView({ chatId: initialChatId, initialMessages = [] }: ChatViewProps) {
+export function ChatView({ chatId: initialChatId, initialMessages = [], initialError = null }: ChatViewProps) {
   const { addChat } = useChatSidebar()
   const [input, setInput] = useState("")
+  // Persistent error: seeded from DB, updated on error/success
+  const [persistedError, setPersistedError] = useState<string | null>(initialError)
 
   const chatIdRef = useRef<string | null>(initialChatId)
   const messagesRef = useRef<UIMessage[]>(initialMessages)
 
-  const saveMessages = (id: string, msgs: UIMessage[]) => {
+  const patchChat = (id: string, updates: Record<string, unknown>) => {
     fetch(`/api/chats/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: msgs }),
+      body: JSON.stringify(updates),
     })
   }
 
-  const { messages, sendMessage, status, regenerate } = useChat<AgentUIMessage>({
+  const saveError = (id: string, msg: string | null) => {
+    patchChat(id, { lastError: msg })
+  }
+
+  const { messages, sendMessage, status, error, regenerate } = useChat<AgentUIMessage>({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
     messages: initialMessages as AgentUIMessage[],
     onFinish: () => {
       if (chatIdRef.current) {
-        saveMessages(chatIdRef.current, messagesRef.current)
+        // Clear any stored error on success and save messages
+        patchChat(chatIdRef.current, { messages: messagesRef.current, lastError: null })
+        setPersistedError(null)
       }
+    },
+    onError: (err) => {
+      const msg = err.message || "Something went wrong."
+      const isRateLimit =
+        msg.toLowerCase().includes("rate limit") ||
+        msg.toLowerCase().includes("too many requests") ||
+        msg.includes("429")
+      const display = isRateLimit
+        ? "Rate limit reached — please wait a moment and try again."
+        : msg
+      setPersistedError(display)
+      if (chatIdRef.current) saveError(chatIdRef.current, display)
+      toast.error(isRateLimit ? "Rate limit reached" : "Error", {
+        description: isRateLimit
+          ? "You've hit the API rate limit. Please wait a moment and try again."
+          : msg,
+        duration: 6000,
+      })
     },
   })
 
   messagesRef.current = messages
 
+  const handleRetry = () => {
+    setPersistedError(null)
+    if (chatIdRef.current) saveError(chatIdRef.current, null)
+    regenerate()
+  }
+
   const handleSubmit = async (msg: PromptInputMessage) => {
     if (!msg.text.trim()) return
+
+    // Clear error when user sends a new message
+    setPersistedError(null)
 
     if (!chatIdRef.current) {
       const res = await fetch("/api/chats", {
@@ -97,6 +134,8 @@ export function ChatView({ chatId: initialChatId, initialMessages = [] }: ChatVi
       chatIdRef.current = id
       addChat({ id, title: msg.text.slice(0, 60), folderId: null, updatedAt: new Date() })
       window.history.replaceState(null, "", `/dashboard/chat/${id}`)
+    } else {
+      saveError(chatIdRef.current, null)
     }
 
     sendMessage({ text: msg.text })
@@ -192,11 +231,33 @@ export function ChatView({ chatId: initialChatId, initialMessages = [] }: ChatVi
               </Fragment>
             )
           })}
+          {persistedError && (
+            <div className="max-w-3xl mx-auto w-full">
+              <div className="flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                <AlertCircleIcon className="size-4 mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium">
+                    {persistedError.toLowerCase().includes("rate limit")
+                      ? "Rate limit reached"
+                      : "Something went wrong"}
+                  </p>
+                  <p className="text-xs mt-0.5 text-destructive/80">{persistedError}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  className="shrink-0 text-xs underline hover:no-underline"
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          )}
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
 
-      <div className="border-t bg-background px-4 py-3">
+      <div className="bg-background px-4 py-3">
         <PromptInput onSubmit={handleSubmit} className="max-w-3xl mx-auto">
           <PromptInputBody>
             <PromptInputTextarea

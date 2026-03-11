@@ -24,6 +24,7 @@ export const chats = pgTable(
     }),
     title: text("title").notNull(),
     messages: jsonb("messages").$type<UIMessage[]>().notNull(),
+    lastError: text("last_error"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

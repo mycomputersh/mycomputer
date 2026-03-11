@@ -358,6 +358,12 @@ export const CitationMessageResponse = memo(
   ({ className, children, sourceMap, ...props }: CitationMessageResponseProps) => {
     const text = typeof children === "string" ? children : ""
 
+    return (
+      <MessageResponse className={className} {...props}>
+        {children}
+      </MessageResponse>
+    )
+
     // No citations in text — fall back to normal markdown renderer
     if (!text || !sourceMap.size || !/\[\d+\]/.test(text)) {
       return (

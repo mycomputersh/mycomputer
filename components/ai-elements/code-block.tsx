@@ -283,10 +283,11 @@ const CodeBlockBody = memo(
       >
         <code
           className={cn(
-            "font-mono text-sm",
+            "text-sm",
             showLineNumbers &&
               "[counter-increment:line_0] [counter-reset:line]",
           )}
+          style={{ fontFamily: "var(--font-jetbrains-mono), var(--font-geist-mono), monospace" }}
         >
           {keyedLines.map((keyedLine) => (
             <LineSpan
