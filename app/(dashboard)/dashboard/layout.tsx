@@ -21,13 +21,19 @@ export default async function DashboardLayout({
   })
   const organizations = orgsResult ?? []
 
-  if (organizations.length === 0) redirect("/onboarding")
-
   const activeOrg =
     organizations.find((o) => o.id === session.session.activeOrganizationId) ??
     organizations[0]
 
-  const orgId = session.session.activeOrganizationId ?? "personal"
+  if (activeOrg && !session.session.activeOrganizationId) {
+    await auth.api.setActiveOrganization({
+      headers: await headers(),
+      body: { organizationId: activeOrg.id },
+    })
+    redirect("/dashboard")
+  }
+
+  const orgId = activeOrg?.id ?? "personal"
 
   const [folderRows, chatRows] = await Promise.all([
     db

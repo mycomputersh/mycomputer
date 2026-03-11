@@ -33,7 +33,7 @@ export default function SignupPage() {
         setError(error.message ?? "Sign up failed")
         return
       }
-      router.push("/onboarding")
+      router.push("/dashboard")
     },
   })
 

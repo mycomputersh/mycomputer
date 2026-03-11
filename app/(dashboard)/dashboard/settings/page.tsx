@@ -4,7 +4,7 @@ import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { db } from "@/db/drizzle"
 import { orgSettings } from "@/db/settings-schema"
-import { SettingsForm } from "@/components/settings-form"
+import { SettingsTabs } from "@/components/settings-tabs"
 
 export default async function SettingsPage() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -13,23 +13,37 @@ export default async function SettingsPage() {
   const organizationId = session.session.activeOrganizationId
   if (!organizationId) redirect("/dashboard")
 
-  const rows = await db
-    .select()
-    .from(orgSettings)
-    .where(eq(orgSettings.organizationId, organizationId))
-    .limit(1)
+  const [settingsRows, org] = await Promise.all([
+    db
+      .select()
+      .from(orgSettings)
+      .where(eq(orgSettings.organizationId, organizationId))
+      .limit(1),
+    auth.api.getFullOrganization({
+      headers: await headers(),
+      query: { organizationId },
+    }),
+  ])
 
-  const settings = rows[0] ?? null
+  if (!org) redirect("/dashboard")
+
+  const currentMember = org.members.find((m) => m.userId === session.user.id)
+  const canManage =
+    currentMember?.role === "owner" || currentMember?.role === "admin"
 
   return (
-    <div className="max-w-2xl space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Settings</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Configure AI providers and embedding models for your organization.
-        </p>
-      </div>
-      <SettingsForm initialSettings={settings} />
+    <div className="flex h-full flex-col">
+      <header className="flex h-14 shrink-0 items-center border-b px-6">
+        <h1 className="text-sm font-semibold">Settings</h1>
+      </header>
+
+      <SettingsTabs
+        initialSettings={settingsRows[0] ?? null}
+        org={org}
+        currentUserId={session.user.id}
+        canManage={canManage}
+        organizationId={organizationId}
+      />
     </div>
   )
 }

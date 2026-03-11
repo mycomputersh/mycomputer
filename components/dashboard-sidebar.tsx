@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useRef, useState } from "react"
 import {
-  LayoutDashboard, Users, MessageSquare, Store, Settings,
+  MessageSquare, Store, Settings,
   LogOut, FolderIcon, FolderOpen, ChevronRight, MoreHorizontal,
   Pencil, Trash2, Plus,
 } from "lucide-react"
@@ -52,8 +52,6 @@ type Props = {
 }
 
 const navItems = [
-  { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
-  { href: "/dashboard/members", label: "Members", icon: Users },
   { href: "/dashboard/chat", label: "Chat", icon: MessageSquare },
   { href: "/dashboard/marketplace", label: "Marketplace", icon: Store },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
