@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import {
   Bot,
   Brain,
@@ -8,13 +7,14 @@ import {
   FolderOpen,
   Globe,
   ListChecks,
+  type LucideIcon,
   Plug,
   Plus,
   Search,
   Server,
   Trash2,
-  type LucideIcon,
 } from "lucide-react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -27,8 +27,8 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
 import type { MarketplaceItem } from "@/lib/marketplace"
+import { cn } from "@/lib/utils"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,22 +60,26 @@ const CATEGORY_CONFIG: Record<
     dot: "bg-blue-500",
   },
   Development: {
-    badge: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
+    badge:
+      "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
     iconBg: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
     dot: "bg-orange-500",
   },
   Memory: {
-    badge: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
+    badge:
+      "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
     iconBg: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
     dot: "bg-purple-500",
   },
   Files: {
-    badge: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+    badge:
+      "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
     iconBg: "bg-green-500/10 text-green-600 dark:text-green-400",
     dot: "bg-green-500",
   },
   Productivity: {
-    badge: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
+    badge:
+      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
     iconBg: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400",
     dot: "bg-yellow-500",
   },
@@ -145,7 +149,9 @@ function ToolCard({
             {item.category}
           </span>
         </div>
-        <p className="text-xs text-muted-foreground truncate mt-0.5">{item.description}</p>
+        <p className="text-xs text-muted-foreground truncate mt-0.5">
+          {item.description}
+        </p>
       </div>
 
       <Button
@@ -155,7 +161,8 @@ function ToolCard({
         disabled={loading}
         className={cn(
           "h-6 px-2 text-xs shrink-0",
-          isInstalled && "text-destructive border-destructive/40 hover:bg-destructive/10",
+          isInstalled &&
+            "text-destructive border-destructive/40 hover:bg-destructive/10",
         )}
       >
         {loading ? "…" : isInstalled ? "Uninstall" : "Install"}
@@ -178,7 +185,9 @@ function McpServerCard({
   const remove = async () => {
     setRemoving(true)
     try {
-      const res = await fetch(`/api/marketplace/mcp/${server.id}`, { method: "DELETE" })
+      const res = await fetch(`/api/marketplace/mcp/${server.id}`, {
+        method: "DELETE",
+      })
       if (res.ok) onRemove(server.id)
     } finally {
       setRemoving(false)
@@ -198,7 +207,9 @@ function McpServerCard({
             MCP
           </span>
         </div>
-        <p className="text-xs text-muted-foreground font-mono truncate mt-0.5">{server.url}</p>
+        <p className="text-xs text-muted-foreground font-mono truncate mt-0.5">
+          {server.url}
+        </p>
       </div>
 
       <Button
@@ -263,7 +274,8 @@ function AddMcpDialog({ onAdd }: { onAdd: (server: McpServerRow) => void }) {
         <DialogHeader>
           <DialogTitle>Add MCP Server</DialogTitle>
           <DialogDescription>
-            Connect an MCP-compatible server to extend your agent with custom tools.
+            Connect an MCP-compatible server to extend your agent with custom
+            tools.
           </DialogDescription>
         </DialogHeader>
 
@@ -287,7 +299,10 @@ function AddMcpDialog({ onAdd }: { onAdd: (server: McpServerRow) => void }) {
             />
             <p className="text-xs text-muted-foreground">
               The SSE endpoint of your MCP server (e.g.{" "}
-              <code className="rounded bg-muted px-1 py-0.5">http://localhost:3001/sse</code>)
+              <code className="rounded bg-muted px-1 py-0.5">
+                http://localhost:3001/sse
+              </code>
+              )
             </p>
           </div>
           {error && <p className="text-xs text-destructive">{error}</p>}
@@ -307,7 +322,13 @@ function AddMcpDialog({ onAdd }: { onAdd: (server: McpServerRow) => void }) {
 
 type Tab = "tools" | "mcp"
 
-function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
+function TabBar({
+  active,
+  onChange,
+}: {
+  active: Tab
+  onChange: (t: Tab) => void
+}) {
   return (
     <div className="inline-flex h-9 items-center rounded-lg bg-muted p-1 text-muted-foreground">
       {(
@@ -348,10 +369,14 @@ export function MarketplaceGrid({
   const [search, setSearch] = useState("")
   const [mcpList, setMcpList] = useState<McpServerRow[]>(initialMcpServers)
 
-  const categories = ["All", ...Array.from(new Set(items.map((i) => i.category)))]
+  const categories = [
+    "All",
+    ...Array.from(new Set(items.map((i) => i.category))),
+  ]
 
   const visibleItems = items.filter((i) => {
-    const matchesCategory = categoryFilter === "All" || i.category === categoryFilter
+    const matchesCategory =
+      categoryFilter === "All" || i.category === categoryFilter
     const matchesSearch =
       !search ||
       i.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -365,18 +390,6 @@ export function MarketplaceGrid({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <TabBar active={tab} onChange={setTab} />
 
-        {tab === "tools" && (
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Search tools…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-8 pl-8 text-xs w-48"
-            />
-          </div>
-        )}
-
         {tab === "mcp" && (
           <AddMcpDialog onAdd={(s) => setMcpList((prev) => [s, ...prev])} />
         )}
@@ -389,6 +402,7 @@ export function MarketplaceGrid({
           <div className="flex flex-wrap gap-2">
             {categories.map((cat) => (
               <button
+                type="button"
                 key={cat}
                 onClick={() => setCategoryFilter(cat)}
                 className={cn(
@@ -407,12 +421,18 @@ export function MarketplaceGrid({
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center">
               <Search className="mb-3 size-8 text-muted-foreground/50" />
               <p className="text-sm font-medium">No tools found</p>
-              <p className="mt-1 text-xs text-muted-foreground">Try a different search or category</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Try a different search or category
+              </p>
             </div>
           ) : (
             <div className="flex flex-col gap-1.5">
               {visibleItems.map((item) => (
-                <ToolCard key={item.id} item={item} installed={item.installed} />
+                <ToolCard
+                  key={item.id}
+                  item={item}
+                  installed={item.installed}
+                />
               ))}
             </div>
           )}
@@ -450,7 +470,9 @@ export function MarketplaceGrid({
                 <McpServerCard
                   key={server.id}
                   server={server}
-                  onRemove={(id) => setMcpList((prev) => prev.filter((s) => s.id !== id))}
+                  onRemove={(id) =>
+                    setMcpList((prev) => prev.filter((s) => s.id !== id))
+                  }
                 />
               ))}
             </div>
