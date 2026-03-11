@@ -15,6 +15,7 @@ import type {
   WebSearchInvocation,
   WriteFileInvocation,
 } from "@/lib/tools"
+import type { DynamicToolUIPart } from "ai"
 import { MessageResponse } from "@/components/ai-elements/message"
 import {
   Tool,
@@ -466,6 +467,32 @@ export function ReadFileRenderer({ part }: { part: ReadFileInvocation }) {
               )
             ) : null
           }
+          errorText={part.state === "output-error" ? part.errorText : undefined}
+        />
+      </ToolContent>
+    </Tool>
+  )
+}
+
+// ─── MCP Tool (generic) ───────────────────────────────────────────────────────
+
+export function McpToolRenderer({ part }: { part: DynamicToolUIPart }) {
+  const label = part.toolName
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+
+  return (
+    <Tool defaultOpen={part.state === "output-available"}>
+      <ToolHeader
+        type="dynamic-tool"
+        toolName={part.toolName}
+        state={part.state}
+        title={label}
+      />
+      <ToolContent>
+        <ToolInput input={part.input} />
+        <ToolOutput
+          output={part.state === "output-available" ? part.output ?? null : null}
           errorText={part.state === "output-error" ? part.errorText : undefined}
         />
       </ToolContent>

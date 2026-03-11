@@ -37,6 +37,7 @@ import {
   FetchPageRenderer,
   RegisterSourcesRenderer,
   ListFilesRenderer,
+  McpToolRenderer,
   MemoryForgetRenderer,
   MemoryRecallRenderer,
   MemoryStoreRenderer,
@@ -256,6 +257,7 @@ export function ChatView({ chatId: initialChatId, initialMessages = [], initialE
                   if (part.type === "tool-writeFile") return <WriteFileRenderer key={key} part={part} />
                   if (part.type === "tool-readFile") return <ReadFileRenderer key={key} part={part} />
                   if (part.type === "tool-listFiles") return <ListFilesRenderer key={key} part={part} />
+                  if (part.type === "dynamic-tool") return <McpToolRenderer key={key} part={part} />
 
                   return null
                 })}
