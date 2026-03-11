@@ -87,7 +87,7 @@ export function OrgSwitcher({ organizations, activeOrg }: Props) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-auto gap-2 px-2 py-1.5">
+          <Button variant="ghost" className="h-auto w-full justify-start gap-2 px-2 py-1.5">
             {activeOrg ? (
               <>
                 <Avatar className="size-6 rounded-sm">
@@ -98,15 +98,15 @@ export function OrgSwitcher({ organizations, activeOrg }: Props) {
                     {orgInitials(activeOrg.name)}
                   </AvatarFallback>
                 </Avatar>
-                <span className="font-medium text-sm">{activeOrg.name}</span>
+                <span className="flex-1 truncate text-left font-medium text-sm">{activeOrg.name}</span>
               </>
             ) : (
-              <span className="text-muted-foreground text-sm">
+              <span className="flex-1 text-left text-muted-foreground text-sm">
                 Select organization
               </span>
             )}
             <svg
-              className="ml-1 size-4 text-muted-foreground"
+              className="ml-auto size-4 shrink-0 text-muted-foreground"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"

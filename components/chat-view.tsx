@@ -4,7 +4,10 @@ import { Fragment, useRef, useState } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport, type UIMessage } from "ai"
 import { CopyIcon, RefreshCcwIcon, AlertCircleIcon } from "lucide-react"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Analytics01Icon } from "@hugeicons/core-free-icons"
 import { toast } from "sonner"
+import { TelemetryPanel } from "@/components/telemetry-panel"
 import {
   Conversation,
   ConversationContent,
@@ -62,6 +65,7 @@ const SUGGESTIONS = [
 export function ChatView({ chatId: initialChatId, initialMessages = [], initialError = null }: ChatViewProps) {
   const { addChat } = useChatSidebar()
   const [input, setInput] = useState("")
+  const [telemetryOpen, setTelemetryOpen] = useState(false)
   // Persistent error: seeded from DB, updated on error/success
   const [persistedError, setPersistedError] = useState<string | null>(initialError)
 
@@ -81,7 +85,12 @@ export function ChatView({ chatId: initialChatId, initialMessages = [], initialE
   }
 
   const { messages, sendMessage, status, error, regenerate } = useChat<AgentUIMessage>({
-    transport: new DefaultChatTransport({ api: "/api/chat" }),
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+      prepareSendMessagesRequest: ({ messages, trigger, messageId }) => ({
+        body: { messages, trigger, messageId, chatId: chatIdRef.current },
+      }),
+    }),
     messages: initialMessages as AgentUIMessage[],
     onFinish: () => {
       if (chatIdRef.current) {
@@ -143,7 +152,8 @@ export function ChatView({ chatId: initialChatId, initialMessages = [], initialE
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full min-w-0">
+    <div className="flex flex-col flex-1 min-w-0 h-full">
       <Conversation className="flex-1 min-h-0">
         <ConversationContent className="px-4 py-6 max-w-3xl mx-auto w-full">
           {messages.length === 0 && (
@@ -266,7 +276,17 @@ export function ChatView({ chatId: initialChatId, initialMessages = [], initialE
               onChange={(e) => setInput(e.currentTarget.value)}
             />
           </PromptInputBody>
-          <PromptInputFooter className="justify-end">
+          <PromptInputFooter className="justify-between">
+            <button
+              type="button"
+              onClick={() => setTelemetryOpen((o) => !o)}
+              disabled={!chatIdRef.current}
+              title="View traces"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors px-1 py-0.5 rounded"
+            >
+              <HugeiconsIcon icon={Analytics01Icon} className="size-3.5" />
+              Traces
+            </button>
             <PromptInputSubmit
               status={status === "streaming" ? "streaming" : "ready"}
               disabled={!input.trim() && status !== "streaming"}
@@ -274,6 +294,15 @@ export function ChatView({ chatId: initialChatId, initialMessages = [], initialE
           </PromptInputFooter>
         </PromptInput>
       </div>
+    </div>
+
+      {telemetryOpen && chatIdRef.current && (
+        <TelemetryPanel
+          chatId={chatIdRef.current}
+          onClose={() => setTelemetryOpen(false)}
+          refreshTrigger={status}
+        />
+      )}
     </div>
   )
 }

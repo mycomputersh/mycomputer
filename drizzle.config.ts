@@ -10,6 +10,7 @@ export default defineConfig({
     "./db/marketplace-schema.ts",
     "./db/memory-schema.ts",
     "./db/settings-schema.ts",
+    "./db/telemetry-schema.ts",
   ],
   dialect: "postgresql",
   dbCredentials: {

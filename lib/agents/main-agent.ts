@@ -13,6 +13,7 @@ import { webSearchTool } from "@/lib/tools/web-search"
 import { createPlanTool, updateStepStatusTool } from "@/lib/tools/workflow"
 import { createLanguageModel, geminiModel } from "../models"
 import type { OrgSettings } from "@/db/settings-schema"
+import type { TelemetryContext } from "@/lib/middleware/telemetry"
 
 const instructions = `You are a capable AI assistant with access to a set of tools chosen by the user.
 
@@ -54,8 +55,9 @@ export function createMainAgent(
   organizationId: string,
   enabledToolNames: string[] = [...ALL_TOOL_NAMES],
   settings: OrgSettings | null = null,
+  telemetry?: TelemetryContext,
 ) {
-  const model = createLanguageModel(settings)
+  const model = createLanguageModel(settings, telemetry)
   const { memoryStoreTool, memoryRecallTool, memoryForgetTool } =
     createMemoryTools(organizationId, settings)
 

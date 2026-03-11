@@ -3,6 +3,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { createOpenAI } from "@ai-sdk/openai"
 import { wrapLanguageModel, type LanguageModelMiddleware } from "ai"
 import type { OrgSettings } from "@/db/settings-schema"
+import { createTelemetryMiddleware, type TelemetryContext } from "@/lib/middleware/telemetry"
 
 export type { OrgSettings }
 
@@ -50,7 +51,11 @@ const rateLimitBackoffMiddleware: LanguageModelMiddleware = {
 
 // ─── Model factories ──────────────────────────────────────────────────────────
 
-export function createLanguageModel(settings: OrgSettings | null) {
+export function createLanguageModel(settings: OrgSettings | null, telemetry?: TelemetryContext) {
+  const middleware: LanguageModelMiddleware[] = []
+  if (telemetry) middleware.push(createTelemetryMiddleware(telemetry))
+  middleware.push(rateLimitBackoffMiddleware, devToolsMiddleware())
+
   if (settings?.aiProvider === "openai") {
     const client = createOpenAI({
       apiKey: settings.aiApiKey ?? process.env.OPENAI_API_KEY,
@@ -58,7 +63,7 @@ export function createLanguageModel(settings: OrgSettings | null) {
     })
     return wrapLanguageModel({
       model: client(settings.aiModel ?? "gpt-4o"),
-      middleware: [rateLimitBackoffMiddleware, devToolsMiddleware()],
+      middleware,
     })
   }
 
@@ -68,7 +73,7 @@ export function createLanguageModel(settings: OrgSettings | null) {
   })
   return wrapLanguageModel({
     model: client(settings?.aiModel ?? "gemini-2.5-flash"),
-    middleware: [rateLimitBackoffMiddleware, devToolsMiddleware()],
+    middleware,
   })
 }
 

@@ -65,11 +65,14 @@ export async function POST(req: Request) {
   const enabledToolNames = resolveEnabledTools(installed.map((r) => r.itemId))
   const settings = settingsRow[0] ?? null
 
-  const { messages }: { messages: UIMessage[] } = await req.json()
+  const { messages, chatId }: { messages: UIMessage[]; chatId?: string } = await req.json()
 
   try {
     return await createAgentUIStreamResponse({
-      agent: createMainAgent(organizationId, enabledToolNames, settings),
+      agent: createMainAgent(organizationId, enabledToolNames, settings, {
+        chatId: chatId ?? null,
+        organizationId,
+      }),
       uiMessages: messages,
     })
   } catch (err) {
