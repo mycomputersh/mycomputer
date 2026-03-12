@@ -82,9 +82,20 @@ export function ChatView({
   const { addChat } = useChatSidebar()
   const [input, setInput] = useState("")
   const [telemetryOpen, setTelemetryOpen] = useState(false)
-  const [selectedModel, setSelectedModel] = useState<string>(
-    availableModels[0]?.id ?? "google:gemini-2.5-flash",
-  )
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("chat:selectedModel")
+      if (saved && availableModels.some((m) => m.id === saved)) return saved
+    }
+    return availableModels[0]?.id ?? "google:gemini-2.5-flash"
+  })
+  const selectedModelRef = useRef(selectedModel)
+
+  const handleModelChange = (modelId: string) => {
+    setSelectedModel(modelId)
+    selectedModelRef.current = modelId
+    localStorage.setItem("chat:selectedModel", modelId)
+  }
   // Persistent error: seeded from DB, updated on error/success
   const [persistedError, setPersistedError] = useState<string | null>(
     initialError,
@@ -117,7 +128,7 @@ export function ChatView({
             trigger,
             messageId,
             chatId: chatIdRef.current,
-            model: selectedModel,
+            model: selectedModelRef.current,
           },
         }),
       }),
@@ -378,7 +389,7 @@ export function ChatView({
                 <ModelSelector
                   models={availableModels}
                   value={selectedModel}
-                  onChange={setSelectedModel}
+                  onChange={handleModelChange}
                 />
                 <button
                   type="button"
