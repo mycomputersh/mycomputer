@@ -28,8 +28,14 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input"
+import dynamic from "next/dynamic"
 import { useChatSidebar } from "@/components/chat-sidebar-context"
-import { type AvailableModel, ModelSelector } from "@/components/model-selector"
+import type { AvailableModel } from "@/components/model-selector"
+
+const ModelSelector = dynamic(
+  () => import("@/components/model-selector").then((m) => m.ModelSelector),
+  { ssr: false },
+)
 import { TelemetryPanel } from "@/components/telemetry-panel"
 import {
   CodeRunnerRenderer,
